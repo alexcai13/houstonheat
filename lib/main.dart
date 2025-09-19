@@ -39,12 +39,6 @@ class _HomePageState extends State<HomePage> {
   int _currentChatIndex = 0;
   Map<String, dynamic>? _currentWeatherData;
 
-  void _updateChats(List<Map<String, dynamic>> chats) {
-    setState(() {
-      _chatHistories = chats;
-    });
-  }
-
   void _onSelectChat(List<Map<String, dynamic>> chats, int chatIndex) {
     print('Selecting chat $chatIndex (total chats: ${chats.length})');
     if (chatIndex >= chats.length) {
@@ -52,10 +46,16 @@ class _HomePageState extends State<HomePage> {
       chatIndex = Math.max(0, chats.length - 1);
     }
     setState(() {
-      _chatHistories = chats;
+      _chatHistories = List<Map<String, dynamic>>.from(chats); // Create a new list
       _currentChatIndex = chatIndex;
       _selectedIndex = 3;
-      _showChatSelector = false;  // Add this line to hide the selector
+      _showChatSelector = false;
+    });
+  }
+
+  void _updateChats(List<Map<String, dynamic>> chats) {
+    setState(() {
+      _chatHistories = List<Map<String, dynamic>>.from(chats); // Create a new list
     });
   }
 

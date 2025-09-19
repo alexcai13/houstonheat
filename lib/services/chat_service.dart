@@ -74,7 +74,7 @@ class ChatGPTService {
     final body = jsonEncode({
       "model": "openai/gpt-oss-120b",
       "messages": messages,
-      "max_tokens": 16,
+      "max_tokens": 512,
       "temperature": 0.2,
     });
 

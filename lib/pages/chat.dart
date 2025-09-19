@@ -24,24 +24,23 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   final TextEditingController _controller = TextEditingController();
-  late List<Map<String, dynamic>> _chatHistories;
-  late int _chatIndex;
   bool _isLoading = false;
   bool _titleRequested = false;
   final ChatGPTService _chatService = ChatGPTService('***REMOVED***'); // Replace with your key
 
-  @override
-  void initState() {
-    super.initState();
-    _chatHistories = widget.chatHistories;
-    _chatIndex = widget.chatIndex;
-  }
-
   void _sendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
+
+    final updatedChats = List<Map<String, dynamic>>.from(widget.chatHistories);
+    final isNewChat = updatedChats[widget.chatIndex]['title'] == 'New Chat' &&
+                      updatedChats[widget.chatIndex]['messages'].isEmpty;
+    
     setState(() {
-      _chatHistories[_chatIndex]['messages'].add({'role': 'user', 'content': text});
+      updatedChats[widget.chatIndex]['messages'].add({
+        'role': 'user',
+        'content': text
+      });
       _isLoading = true;
       _controller.clear();
     });
@@ -52,30 +51,43 @@ class _ChatPageState extends State<ChatPage> {
         text,
         weatherContext: weatherContext,
       );
+
       setState(() {
-        _chatHistories[_chatIndex]['messages'].add({'role': 'assistant', 'content': response});
+        updatedChats[widget.chatIndex]['messages'].add({
+          'role': 'assistant',
+          'content': response
+        });
         _isLoading = false;
       });
-      widget.onUpdateChats(_chatHistories);
+      
+      widget.onUpdateChats(updatedChats);
 
-      // If this is the first assistant response, get a title
-      if (!_titleRequested &&
-          (_chatHistories[_chatIndex]['title'] == null ||
-           _chatHistories[_chatIndex]['title'] == 'New Chat' ||
-           (_chatHistories[_chatIndex]['title'] as String).trim().isEmpty)) {
-        _titleRequested = true;
-        final title = await _chatService.getChatTitle(_chatHistories[_chatIndex]['messages']);
-        setState(() {
-          _chatHistories[_chatIndex]['title'] = title.trim();
-        });
-        widget.onUpdateChats(_chatHistories);
+      // Generate title for new chats after first message exchange
+      if (isNewChat) {
+        try {
+          final title = await _chatService.getChatTitle(
+            List<Map<String, String>>.from(updatedChats[widget.chatIndex]['messages'])
+          );
+          
+          final chatsWithTitle = List<Map<String, dynamic>>.from(updatedChats);
+          chatsWithTitle[widget.chatIndex]['title'] = title.trim();
+          
+          setState(() {});
+          widget.onUpdateChats(chatsWithTitle);
+        } catch (e) {
+          print('Error generating title: $e');
+        }
       }
     } catch (e) {
+      final chatsWithError = List<Map<String, dynamic>>.from(updatedChats);
       setState(() {
-        _chatHistories[_chatIndex]['messages'].add({'role': 'assistant', 'content': 'Sorry, something went wrong.'});
+        chatsWithError[widget.chatIndex]['messages'].add({
+          'role': 'assistant',
+          'content': 'Sorry, something went wrong.'
+        });
         _isLoading = false;
       });
-      widget.onUpdateChats(_chatHistories);
+      widget.onUpdateChats(chatsWithError);
     }
   }
 
@@ -120,12 +132,15 @@ class _ChatPageState extends State<ChatPage> {
                 onTap: () {
                   final newChat = {
                     'title': 'New Chat',
-                    'messages': <Map<String, String>>[],
+                    'messages': <Map<String, String>>[],  // Empty messages array
                   };
-                  final updatedChats = [...widget.chatHistories, newChat];
+                  // Create a new copy of the chat histories list
+                  final updatedChats = List<Map<String, dynamic>>.from(widget.chatHistories);
+                  updatedChats.add(newChat);
+                  
                   widget.onUpdateChats(updatedChats);
-                  widget.onSwitchChat?.call(updatedChats.length - 1); // <-- always valid index
-                  Navigator.pop(context); // Close drawer
+                  widget.onSwitchChat?.call(updatedChats.length - 1);
+                  Navigator.pop(context);
                 },
               ),
               Divider(),
@@ -153,9 +168,9 @@ class _ChatPageState extends State<ChatPage> {
         children: [
           Expanded(
             child: ListView.builder(
-              itemCount: _chatHistories[_chatIndex]['messages'].length,
+              itemCount: widget.chatHistories[widget.chatIndex]['messages'].length,
               itemBuilder: (context, index) {
-                final msg = _chatHistories[_chatIndex]['messages'][index];
+                final msg = widget.chatHistories[widget.chatIndex]['messages'][index];
                 final isUser = msg['role'] == 'user';
                 return Align(
                   alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,

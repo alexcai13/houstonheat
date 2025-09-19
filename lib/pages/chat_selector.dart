@@ -23,11 +23,16 @@ class ChatSelectorPage extends StatelessWidget {
             leading: Icon(Icons.add),
             title: Text('Start New Chat'),
             onTap: () {
+              // Create a completely new chat with empty messages
               final newChat = {
                 'title': 'New Chat',
-                'messages': <Map<String, String>>[],
+                'messages': <Map<String, String>>[], // Empty messages array
               };
-              onSelectChat([...chatHistories, newChat], chatHistories.length);
+              // Add the new chat to the list
+              final updatedChats = [...chatHistories, newChat];
+              // Select the new chat
+              onSelectChat(updatedChats, updatedChats.length - 1);
+              Navigator.pop(context);
             },
           ),
           ...List.generate(chatHistories.length, (i) {
