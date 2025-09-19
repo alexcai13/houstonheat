@@ -114,33 +114,46 @@ class _ChatPageState extends State<ChatPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(widget.chatHistories[widget.chatIndex]['title'] ?? 'Chat'),
+        backgroundColor: Colors.white,
+        elevation: 1,
+        title: Text(
+          widget.chatHistories[widget.chatIndex]['title'] ?? 'Chat',
+          style: TextStyle(color: Colors.black),
+        ),
         leading: Builder(
           builder: (context) => IconButton(
-            icon: Icon(Icons.menu),
+            icon: Icon(Icons.menu, color: Colors.black),
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
+        iconTheme: IconThemeData(color: Colors.black),
       ),
       drawer: Drawer(
+        backgroundColor: Colors.white,  // Add this
         child: SafeArea(
           child: Column(
             children: [
               ListTile(
-                leading: Icon(Icons.add),
+                leading: Icon(Icons.add, color: Colors.blue),
                 title: Text('Start New Chat'),
                 onTap: () {
                   final newChat = {
                     'title': 'New Chat',
-                    'messages': <Map<String, String>>[],  // Empty messages array
+                    'messages': <Map<String, String>>[],
                   };
-                  // Create a new copy of the chat histories list
-                  final updatedChats = List<Map<String, dynamic>>.from(widget.chatHistories);
-                  updatedChats.add(newChat);
                   
+                  // Create new list and add chat
+                  final updatedChats = List<Map<String, dynamic>>.from(widget.chatHistories)
+                    ..add(newChat);
+                  
+                  // Update parent first
                   widget.onUpdateChats(updatedChats);
+                  
+                  // Switch to new chat index
                   widget.onSwitchChat?.call(updatedChats.length - 1);
-                  Navigator.pop(context);
+                  
+                  // Close drawer after state updates
+                  Navigator.of(context).pop();
                 },
               ),
               Divider(),
