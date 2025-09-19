@@ -28,13 +28,15 @@ class WeatherScreen extends StatefulWidget {
   final double lat;
   final double lon;
   final String cityName;
+  final void Function(Map<String, dynamic>)? onWeatherData; 
 
   const WeatherScreen({
-    super.key,
+    Key? key,
     this.lat = 29.7604,
     this.lon = -95.3698,
     this.cityName = "Houston",
-  });
+    this.onWeatherData,
+  }) : super(key: key);
 
   @override
   _WeatherScreenState createState() => _WeatherScreenState();
@@ -82,7 +84,15 @@ class _WeatherScreenState extends State<WeatherScreen> {
   condition = currentData['weatherCondition']['description']['text'];
   iconBaseUri = currentData['weatherCondition']['iconBaseUri'];
 
-
+        // Call the callback with the weather data
+        if (widget.onWeatherData != null) {
+          widget.onWeatherData!({
+            "currentTempF": currentTempF,
+            "feelsLikeF": feelsLikeF,
+            "condition": condition,
+            "city": widget.cityName, 
+          });
+        }
       hourlyForecast = List<Map<String, dynamic>>.from(
         (forecastData['forecastHours'] as List)
           .map((entry) {
