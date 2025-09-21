@@ -13,7 +13,7 @@ class OpenCenter {
   final String window;
   final double? lat;
   final double? lon;
-  double? distance; // <-- Add this field
+  double? distance;
 
   OpenCenter({
     required this.name,
@@ -118,17 +118,323 @@ class CoolingCentersService {
   }
 }
 
-// -------------------- UI PAGE --------------------
+// -------------------- ANIMATED WIDGETS --------------------
+class AnimatedCenterCard extends StatefulWidget {
+  final OpenCenter center;
+  final int index;
+
+  const AnimatedCenterCard({
+    Key? key,
+    required this.center,
+    required this.index,
+  }) : super(key: key);
+
+  @override
+  _AnimatedCenterCardState createState() => _AnimatedCenterCardState();
+}
+
+class _AnimatedCenterCardState extends State<AnimatedCenterCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: Duration(milliseconds: 600),
+      vsync: this,
+    );
+
+    _scaleAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.elasticOut,
+    ));
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    ));
+
+    _slideAnimation = Tween<Offset>(
+      begin: Offset(0, 0.5),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutCubic,
+    ));
+
+    // Stagger animations based on index
+    Future.delayed(Duration(milliseconds: widget.index * 100), () {
+      if (mounted) _controller.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SlideTransition(
+      position: _slideAnimation,
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: ScaleTransition(
+          scale: _scaleAnimation,
+          child: Container(
+            margin: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Material(
+              elevation: 8,
+              shadowColor: Colors.black.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  gradient: LinearGradient(
+                    colors: [Colors.white, Colors.grey[50]!],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      Hero(
+                        tag: 'cooling_icon_${widget.index}',
+                        child: Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            gradient: LinearGradient(
+                              colors: [Colors.blue[400]!, Colors.cyan[300]!],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.blue.withOpacity(0.3),
+                                blurRadius: 12,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.ac_unit_rounded,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.center.name,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey[800],
+                                height: 1.2,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.location_on_rounded,
+                                  size: 16,
+                                  color: Colors.grey[600],
+                                ),
+                                SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    widget.center.address,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey[600],
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 6),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.access_time_rounded,
+                                  size: 16,
+                                  color: Colors.green[600],
+                                ),
+                                SizedBox(width: 4),
+                                Text(
+                                  widget.center.window,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.green[600],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (widget.center.distance != null && widget.center.distance != double.infinity)
+                              Padding(
+                                padding: EdgeInsets.only(top: 6),
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange.withValues(alpha: 0.1), // Fixed withOpacity
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    '${widget.center.distance!.toStringAsFixed(1)} mi',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.orange[700],
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ));
+  }
+}
+
+class AnimatedToggleButton extends StatefulWidget {
+  final String text;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const AnimatedToggleButton({
+    Key? key,
+    required this.text,
+    required this.isSelected,
+    required this.onTap,
+  }) : super(key: key);
+
+  @override
+  _AnimatedToggleButtonState createState() => _AnimatedToggleButtonState();
+}
+
+class _AnimatedToggleButtonState extends State<AnimatedToggleButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => _controller.forward(),
+      onTapUp: (_) => _controller.reverse(),
+      onTapCancel: () => _controller.reverse(),
+      onTap: widget.onTap,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: AnimatedContainer(
+          duration: Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: widget.isSelected
+                ? LinearGradient(
+                    colors: [Colors.blue[600]!, Colors.blue[700]!],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : LinearGradient(
+                    colors: [Colors.grey[100]!, Colors.grey[200]!],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+            boxShadow: widget.isSelected
+                ? [
+                    BoxShadow(
+                      color: Colors.blue.withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: Offset(0, 4),
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+          ),
+          child: Center(
+            child: Text(
+              widget.text,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: widget.isSelected ? Colors.white : Colors.grey[700],
+              ),
+            ),
+          ),
+        ),
+      ));
+  }
+}
+
+// -------------------- MAIN UI PAGE --------------------
 class CoolingCentersPage extends StatefulWidget {
   @override
   _CoolingCentersPageState createState() => _CoolingCentersPageState();
 }
 
-class _CoolingCentersPageState extends State<CoolingCentersPage> {
+class _CoolingCentersPageState extends State<CoolingCentersPage>
+    with TickerProviderStateMixin {
+  late AnimationController _headerController;
+  late Animation<double> _headerFadeAnimation;
+  late Animation<Offset> _headerSlideAnimation;
+
   double _deg2rad(double deg) => deg * (pi / 180);
 
   double _haversine(double lat1, double lon1, double lat2, double lon2) {
-    const R = 3958.8; // Earth radius in miles
+    const R = 3958.8;
     final dLat = _deg2rad(lat2 - lat1);
     final dLon = _deg2rad(lon2 - lon1);
     final a = (sin(dLat / 2) * sin(dLat / 2)) +
@@ -138,279 +444,290 @@ class _CoolingCentersPageState extends State<CoolingCentersPage> {
     return R * c;
   }
 
-  Future<List<OpenCenter>> _getClosestCenters(List<OpenCenter> centers) async {
+  Future<List<OpenCenter>> _getAllOpenCentersByDistance() async {
     try {
-      final position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      // Get user location
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: 10,
+        ),
+      );
       final userLat = position.latitude;
       final userLon = position.longitude;
-      for (var c in centers) {
-        if (c.lat != null && c.lon != null) {
-          c.distance = _haversine(userLat, userLon, c.lat!, c.lon!);
+
+      // Load and parse CSV
+      final csvText = await rootBundle.loadString('assets/Houston_Cooling_Centers.csv');
+      final service = CoolingCentersService();
+      final openCenters = service.openNowFromCsv(csvText);
+
+      // Calculate distances for all open centers
+      for (var center in openCenters) {
+        if (center.lat != null && center.lon != null) {
+          center.distance = _haversine(userLat, userLon, center.lat!, center.lon!);
         } else {
-          c.distance = double.infinity;
+          center.distance = double.infinity;
         }
       }
-      centers.sort((a, b) => (a.distance ?? double.infinity).compareTo(b.distance ?? double.infinity));
-      return centers.take(10).toList();
+
+      // Sort by distance (closest first) and return ALL open centers
+      openCenters.sort((a, b) => (a.distance ?? double.infinity).compareTo(b.distance ?? double.infinity));
+      return openCenters;
     } catch (e) {
-      return centers.take(10).toList();
+      // If location fails, still get open centers but without distance sorting
+      final csvText = await rootBundle.loadString('assets/Houston_Cooling_Centers.csv');
+      final service = CoolingCentersService();
+      return service.openNowFromCsv(csvText);
     }
   }
+
   late Future<List<OpenCenter>> _futureOpenCenters;
-  late Future<List<OpenCenter>> _futureAllCenters;
-  bool showOpenOnly = true;
 
   @override
   void initState() {
-  super.initState();
-  _futureOpenCenters = _loadCenters(openOnly: true);
-  _futureAllCenters = _loadCenters(openOnly: false);
+    super.initState();
+    _headerController = AnimationController(
+      duration: Duration(milliseconds: 800),
+      vsync: this,
+    );
+
+    _headerFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _headerController, curve: Curves.easeInOut),
+    );
+
+    _headerSlideAnimation = Tween<Offset>(
+      begin: Offset(0, -0.5),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _headerController,
+      curve: Curves.easeOutCubic,
+    ));
+
+    _futureOpenCenters = _getAllOpenCentersByDistance();
+    _headerController.forward();
   }
 
-  Future<List<OpenCenter>> _loadCenters({required bool openOnly}) async {
-    final csvText = await rootBundle.loadString('assets/Houston_Cooling_Centers.csv');
-    final service = CoolingCentersService();
-    if (openOnly) {
-      // Add lat/lon to OpenCenter objects
-      final rows = const CsvToListConverter().convert(csvText);
-      if (rows.isEmpty) return [];
-      final header = rows.first.map((e) => e.toString().trim()).toList();
-      final nameIdx = header.indexOf('Name');
-      final addrIdx = header.indexOf('Address');
-      final dayIdx = header.indexOf(service._weekdayName(tz.TZDateTime.now(service._chicago).weekday));
-      final latIdx = header.indexOf('Lat');
-      final lonIdx = header.indexOf('Lon');
-      final open = <OpenCenter>[];
-      for (var i = 1; i < rows.length; i++) {
-        final row = rows[i];
-        final name = (row.length > nameIdx) ? row[nameIdx].toString().trim() : '';
-        final address = (addrIdx >= 0 && row.length > addrIdx) ? row[addrIdx].toString().trim() : '';
-        final window = (row.length > dayIdx) ? row[dayIdx].toString().trim() : '';
-        final lat = (latIdx >= 0 && row.length > latIdx) ? double.tryParse(row[latIdx].toString()) : null;
-        final lon = (lonIdx >= 0 && row.length > lonIdx) ? double.tryParse(row[lonIdx].toString()) : null;
-        if (name.isEmpty || window.isEmpty || !window.contains('-')) continue;
-        open.add(OpenCenter(name: name, address: address, window: window, lat: lat, lon: lon));
-      }
-      return open;
-    } else {
-      // Parse all centers, regardless of open status
-      final rows = const CsvToListConverter().convert(csvText);
-      if (rows.isEmpty) return [];
-      final header = rows.first.map((e) => e.toString().trim()).toList();
-      final nameIdx = header.indexOf('Name');
-      final addrIdx = header.indexOf('Address');
-      final todayName = service._weekdayName(tz.TZDateTime.now(service._chicago).weekday);
-      final dayIdx = header.indexOf(todayName);
-      final latIdx = header.indexOf('Lat');
-      final lonIdx = header.indexOf('Lon');
-      final all = <OpenCenter>[];
-      for (var i = 1; i < rows.length; i++) {
-        final row = rows[i];
-        final name = (row.length > nameIdx) ? row[nameIdx].toString().trim() : '';
-        final address = (addrIdx >= 0 && row.length > addrIdx) ? row[addrIdx].toString().trim() : '';
-        final window = (row.length > dayIdx) ? row[dayIdx].toString().trim() : '';
-        final lat = (latIdx >= 0 && row.length > latIdx) ? double.tryParse(row[latIdx].toString()) : null;
-        final lon = (lonIdx >= 0 && row.length > lonIdx) ? double.tryParse(row[lonIdx].toString()) : null;
-        if (name.isEmpty || window.isEmpty) continue;
-        all.add(OpenCenter(name: name, address: address, window: window, lat: lat, lon: lon));
-      }
-      return all;
-    }
+  @override
+  void dispose() {
+    _headerController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF74ebd5), Color(0xFFACB6E5)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      showOpenOnly ? 'Open Cooling Centers' : 'All Cooling Centers',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      showOpenOnly ? 'Find a safe, cool place near you' : 'All available cooling centers',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.black54,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: showOpenOnly ? Colors.blue[700] : Colors.grey[300],
-                              foregroundColor: showOpenOnly ? Colors.white : Colors.black,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                showOpenOnly = true;
-                              });
-                            },
-                            child: const Text('Open Now'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: !showOpenOnly ? Colors.blue[700] : Colors.grey[300],
-                              foregroundColor: !showOpenOnly ? Colors.white : Colors.black,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                showOpenOnly = false;
-                              });
-                            },
-                            child: const Text('All Centers'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+      backgroundColor: Colors.white,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 200,
+            floating: false,
+            pinned: true,
+            elevation: 0,
+            backgroundColor: Colors.white,
+            iconTheme: IconThemeData(color: Colors.black),
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.blue[50]!, Colors.white],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
                 ),
-              ),
-              Expanded(
-                child: FutureBuilder<List<OpenCenter>>(
-                  future: showOpenOnly ? _futureOpenCenters : _futureAllCenters,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Center(child: CircularProgressIndicator());
-                    } else if (snapshot.hasError) {
-                      return Center(child: Text('Error: ${snapshot.error}', style: TextStyle(color: Colors.red)));
-                    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                      return Center(child: Text(showOpenOnly ? 'No centers open right now.' : 'No centers found.', style: TextStyle(fontSize: 18, color: Colors.black54)));
-                    } else {
-                      return FutureBuilder<List<OpenCenter>>(
-                        future: _getClosestCenters(snapshot.data!),
-                        builder: (context, closestSnapshot) {
-                          if (closestSnapshot.connectionState == ConnectionState.waiting) {
-                            return Center(child: CircularProgressIndicator());
-                          } else if (closestSnapshot.hasError) {
-                            return Center(child: Text('Error: ${closestSnapshot.error}', style: TextStyle(color: Colors.red)));
-                          } else if (!closestSnapshot.hasData || closestSnapshot.data!.isEmpty) {
-                            return Center(child: Text('No centers found.', style: TextStyle(fontSize: 18, color: Colors.black54)));
-                          } else {
-                            final centers = closestSnapshot.data!;
-                            return ListView.builder(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              itemCount: centers.length,
-                              itemBuilder: (context, i) {
-                                final c = centers[i];
-                                return Card(
-                                  elevation: 4,
-                                  margin: const EdgeInsets.symmetric(vertical: 6),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(10),
-                                    child: Row(
-                                      crossAxisAlignment: CrossAxisAlignment.center,
-                                      children: [
-                                        Container(
-                                          decoration: BoxDecoration(
-                                            color: Colors.blue[100],
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
-                                          padding: const EdgeInsets.all(6),
-                                          child: Icon(Icons.ac_unit, size: 22, color: Colors.blue[700]),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                c.name,
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.black87,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Row(
-                                                children: [
-                                                  Icon(Icons.location_on, size: 14, color: Colors.grey[700]),
-                                                  const SizedBox(width: 2),
-                                                  Expanded(
-                                                    child: Text(
-                                                      c.address,
-                                                      style: TextStyle(fontSize: 12, color: Colors.grey[800]),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Row(
-                                                children: [
-                                                  Icon(Icons.access_time, size: 14, color: Colors.grey[700]),
-                                                  const SizedBox(width: 2),
-                                                  Text(
-                                                    'Hours: ${c.window}',
-                                                    style: TextStyle(fontSize: 12, color: Colors.grey[800]),
-                                                  ),
-                                                ],
-                                              ),
-                                              if (c.distance != null && c.distance != double.infinity)
-                                                Padding(
-                                                  padding: const EdgeInsets.only(top: 4.0),
-                                                  child: Row(
-                                                    children: [
-                                                      Icon(Icons.directions_walk, size: 14, color: Colors.green[700]),
-                                                      const SizedBox(width: 2),
-                                                      Text(
-                                                        '${c.distance!.toStringAsFixed(2)} miles away',
-                                                        style: TextStyle(fontSize: 12, color: Colors.green[700], fontWeight: FontWeight.w600),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                child: SafeArea(
+                  child: SlideTransition(
+                    position: _headerSlideAnimation,
+                    child: FadeTransition(
+                      opacity: _headerFadeAnimation,
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Hero(
+                              tag: 'cooling_title',
+                              child: Material(
+                                color: Colors.transparent,
+                                child: Text(
+                                  'Open Cooling Centers',
+                                  style: TextStyle(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey[800],
+                                    height: 1.1,
                                   ),
-                                );
-                              },
-                            );
-                          }
-                        },
-                      );
-                    }
-                  },
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Find all open cooling centers near you',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w400,
+                                height: 1.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+          SliverToBoxAdapter(
+            child: FutureBuilder<List<OpenCenter>>(
+              future: _futureOpenCenters,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Container(
+                    height: 300,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.blue[600]!),
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'Finding open cooling centers...',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                } else if (snapshot.hasError) {
+                  return Container(
+                    height: 200,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.error_outline, size: 48, color: Colors.red[400]),
+                          SizedBox(height: 16),
+                          Text(
+                            'Error loading centers',
+                            style: TextStyle(fontSize: 18, color: Colors.red[600]),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return Container(
+                    height: 300,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.schedule,
+                            size: 64,
+                            color: Colors.grey[400],
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'No centers open right now',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Check back during operating hours',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                } else {
+                  final centers = snapshot.data!;
+                  return Column(
+                    children: [
+                      SizedBox(height: 16),
+                      if (centers.isNotEmpty)
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 24),
+                          child: Row(
+                            children: [
+                              Icon(Icons.near_me, size: 18, color: Colors.blue[600]),
+                              SizedBox(width: 8),
+                              Text(
+                                '${centers.length} centers open now',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      SizedBox(height: 8),
+                      ...List.generate(
+                        centers.length,
+                        (index) => AnimatedCenterCard(
+                          center: centers[index],
+                          index: index,
+                        ),
+                      ),
+                      SizedBox(height: 32),
+                    ],
+                  );
+                }
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
+}
+
+class _ToggleHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+
+  _ToggleHeaderDelegate({required this.child});
+
+  @override
+  double get minExtent => 80;
+
+  @override
+  double get maxExtent => 80;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return child;
+  }
+
+  @override
+  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) {
+    return false;
+  }
+}
+
+// For geolocation:
+Future<Position> _getCurrentLocation() async {
+  return await Geolocator.getCurrentPosition(
+    locationSettings: const LocationSettings(
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 10,
+    ),
+  );
 }
