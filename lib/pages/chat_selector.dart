@@ -64,110 +64,6 @@ class _ChatSelectorPageState extends State<ChatSelectorPage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      drawer: Drawer(  // Add this drawer
-        backgroundColor: Colors.white,
-        child: SafeArea(
-          child: Column(
-            children: [
-              Container(
-                padding: EdgeInsets.all(20),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Colors.purple[400]!, Colors.pink[300]!],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(Icons.menu, color: Colors.white, size: 24),
-                    ),
-                    SizedBox(width: 16),
-                    Text(
-                      'Navigation',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              ListTile(
-                leading: Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[50],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(Icons.home, color: Colors.blue[600]),
-                ),
-                title: Text('Home'),
-                onTap: () {
-                  Navigator.pop(context); // Close drawer
-                  Navigator.pushReplacementNamed(context, '/'); // Navigate to home
-                },
-              ),
-              ListTile(
-                leading: Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.green[50],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(Icons.ac_unit, color: Colors.green[600]),
-                ),
-                title: Text('Cooling Centers'),
-                onTap: () {
-                  Navigator.pop(context); // Close drawer
-                  Navigator.pushNamed(context, '/cooling-centers'); // Navigate to cooling centers
-                },
-              ),
-              ListTile(
-                leading: Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.orange[50],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(Icons.cloud, color: Colors.orange[600]),
-                ),
-                title: Text('Weather'),
-                onTap: () {
-                  Navigator.pop(context); // Close drawer  
-                  Navigator.pushNamed(context, '/weather'); // Navigate to weather
-                },
-              ),
-              Divider(),
-              ListTile(
-                leading: Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.purple[50],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(Icons.add, color: Colors.purple[600]),
-                ),
-                title: Text('New Chat'),
-                onTap: () {
-                  Navigator.pop(context); // Close drawer
-                  final newChat = {
-                    'title': 'New Chat',
-                    'messages': <Map<String, String>>[],
-                  };
-                  
-                  final updatedChats = List<Map<String, dynamic>>.from(widget.chatHistories)
-                    ..add(newChat);
-                  
-                  widget.onSelectChat(updatedChats, updatedChats.length - 1);
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -177,7 +73,7 @@ class _ChatSelectorPageState extends State<ChatSelectorPage>
             elevation: 0,
             backgroundColor: Colors.white,
             iconTheme: IconThemeData(color: Colors.black),
-            automaticallyImplyLeading: false, // Add this line to remove the hamburger menu
+            automaticallyImplyLeading: false, // Add this line to remove hamburger menu
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
                 decoration: BoxDecoration(
@@ -334,6 +230,21 @@ class _ChatSelectorPageState extends State<ChatSelectorPage>
           ),
         ),
       ),
+      drawer: ModernDrawer(
+        chatHistories: widget.chatHistories,
+        currentChatIndex: widget.chatHistories.isEmpty ? -1 : widget.chatHistories.indexOf(widget.chatHistories.last),
+        onUpdateChats: (updatedChats) {
+          // Handle chat updates from the drawer
+          setState(() {
+            widget.chatHistories.clear();
+            widget.chatHistories.addAll(updatedChats);
+          });
+        },
+        onSwitchChat: (index) {
+          // Handle chat switch from the drawer
+          widget.onSelectChat(widget.chatHistories, index);
+        },
+      ),
     );
   }
 }
@@ -397,9 +308,6 @@ class _AnimatedChatCardState extends State<AnimatedChatCard>
   @override
   Widget build(BuildContext context) {
     final messageCount = (widget.chat['messages'] as List).length;
-    final lastMessage = messageCount > 0 
-        ? (widget.chat['messages'] as List).last['content'] as String? ?? ''
-        : 'No messages yet';
 
     return SlideTransition(
       position: _slideAnimation,
@@ -468,33 +376,22 @@ class _AnimatedChatCardState extends State<AnimatedChatCard>
                                 color: Colors.grey[800],
                                 height: 1.2,
                               ),
-                              maxLines: 1,
+                              maxLines: 2, // Allow 2 lines for longer titles
                               overflow: TextOverflow.ellipsis,
                             ),
-                            SizedBox(height: 6),
-                            Text(
-                              lastMessage,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                                height: 1.3,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            SizedBox(height: 8),
+                            SizedBox(height: 12),
                             Row(
                               children: [
                                 Icon(
                                   Icons.message_rounded,
-                                  size: 14,
+                                  size: 16,
                                   color: Colors.grey[500],
                                 ),
-                                SizedBox(width: 4),
+                                SizedBox(width: 6),
                                 Text(
                                   '$messageCount message${messageCount == 1 ? '' : 's'}',
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: 14,
                                     color: Colors.grey[500],
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -517,5 +414,261 @@ class _AnimatedChatCardState extends State<AnimatedChatCard>
           ),
         ),
       ));
+  }
+}
+
+// Modern Drawer Component
+class ModernDrawer extends StatelessWidget {
+  final List<Map<String, dynamic>> chatHistories;
+  final int currentChatIndex;
+  final Function(List<Map<String, dynamic>>) onUpdateChats;
+  final Function(int)? onSwitchChat;
+
+  const ModernDrawer({
+    Key? key,
+    required this.chatHistories,
+    required this.currentChatIndex,
+    required this.onUpdateChats,
+    this.onSwitchChat,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      backgroundColor: Colors.white,
+      child: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              padding: EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.blue[400]!, Colors.cyan[300]!],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.menu, color: Colors.white, size: 24),
+                  ),
+                  SizedBox(width: 16),
+                  Text(
+                    'Navigation',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Go to Homepage
+            Container(
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+                child: ListTile(
+                  leading: Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.purple[50],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(Icons.home, color: Colors.purple[600]),
+                  ),
+                  title: Text(
+                    'Chat Homepage',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context); // Close drawer
+                    Navigator.pop(context); // Go back to chat homepage
+                  },
+                ),
+              ),
+            ),
+
+            // Start New Chat
+            Container(
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Material(
+                color: Colors.blue[50],
+                borderRadius: BorderRadius.circular(12),
+                child: ListTile(
+                  leading: Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[100],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(Icons.add, color: Colors.blue[600]),
+                  ),
+                  title: Text(
+                    'Start New Chat',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.blue[700],
+                    ),
+                  ),
+                  onTap: () {
+                    final newChat = {
+                      'title': 'New Chat',
+                      'messages': <Map<String, String>>[],
+                    };
+                    
+                    final updatedChats = List<Map<String, dynamic>>.from(chatHistories)
+                      ..add(newChat);
+                    
+                    onUpdateChats(updatedChats);
+                    onSwitchChat?.call(updatedChats.length - 1);
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ),
+            ),
+
+            Divider(indent: 16, endIndent: 16),
+            
+            // Previous Chats Section
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(Icons.history, size: 18, color: Colors.grey[600]),
+                  SizedBox(width: 8),
+                  Text(
+                    'Previous Chats',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            Expanded(
+              child: ListView.builder(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                itemCount: chatHistories.length,
+                itemBuilder: (context, i) {
+                  final isSelected = i == currentChatIndex;
+                  final messageCount = (chatHistories[i]['messages'] as List).length;
+                  
+                  return Container(
+                    margin: EdgeInsets.only(bottom: 8),
+                    child: Material(
+                      color: isSelected ? Colors.blue[50] : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () {
+                          if (!isSelected) {
+                            onSwitchChat?.call(i);
+                          }
+                          Navigator.pop(context);
+                        },
+                        child: Padding(
+                          padding: EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: isSelected ? Colors.blue[400] : Colors.grey[300],
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      chatHistories[i]['title'] ?? 'Chat ${i + 1}',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                        color: isSelected ? Colors.blue[700] : Colors.grey[700],
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (messageCount > 0)
+                                      Text(
+                                        '$messageCount message${messageCount == 1 ? '' : 's'}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[500],
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              if (isSelected)
+                                Icon(
+                                  Icons.check_circle,
+                                  size: 16,
+                                  color: Colors.blue[400],
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            
+            Divider(indent: 16, endIndent: 16),
+            
+            // Other navigation options
+            ListTile(
+              leading: Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green[50],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.ac_unit, color: Colors.green[600]),
+              ),
+              title: Text('Cooling Centers'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/cooling-centers');
+              },
+            ),
+            
+            ListTile(
+              leading: Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange[50],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.cloud, color: Colors.orange[600]),
+              ),
+              title: Text('Weather'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/weather');
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

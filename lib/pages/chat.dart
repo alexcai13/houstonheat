@@ -25,6 +25,8 @@ class ChatPage extends StatefulWidget {
 class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _focusNode = FocusNode();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>(); // Add this line
   bool _isLoading = false;
   bool _titleRequested = false;
   final ChatGPTService _chatService = ChatGPTService('***REMOVED***');
@@ -53,6 +55,7 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
     _inputAnimationController.dispose();
     _controller.dispose();
     _scrollController.dispose();
+    _focusNode.dispose(); // Add this line
     super.dispose();
   }
 
@@ -84,6 +87,9 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
       _isLoading = true;
       _controller.clear();
     });
+
+    // Keep focus on the text field after sending
+    _focusNode.requestFocus(); // Add this line
 
     _scrollToBottom();
 
@@ -169,6 +175,7 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
     final messages = widget.chatHistories[widget.chatIndex]['messages'] as List;
 
     return Scaffold(
+      key: _scaffoldKey, // Add this line
       backgroundColor: Colors.grey[50],
       body: CustomScrollView(
         controller: _scrollController,
@@ -178,9 +185,9 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
             floating: false,
             pinned: true,
             elevation: 0,
-            backgroundColor: Colors.transparent, // Change from Colors.white to transparent
+            backgroundColor: Colors.transparent,
             centerTitle: true,
-            flexibleSpace: Container( // Wrap FlexibleSpaceBar in Container with gradient
+            flexibleSpace: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [Colors.blue[50]!, Colors.white],
@@ -239,7 +246,9 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
                 ),
                 child: Icon(Icons.menu, color: Colors.black, size: 20),
               ),
-              onPressed: () => Scaffold.of(context).openDrawer(),
+              onPressed: () {
+                _scaffoldKey.currentState?.openDrawer(); // Change this line
+              },
             ),
           ),
           SliverPadding(
@@ -371,6 +380,7 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
                 Expanded(
                   child: TextField(
                     controller: _controller,
+                    focusNode: _focusNode, // Add this line
                     decoration: InputDecoration(
                       hintText: 'Ask about heat safety...',
                       hintStyle: TextStyle(color: Colors.grey[500]),
@@ -378,10 +388,10 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
                       contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                     ),
                     style: TextStyle(fontSize: 16),
-                    onSubmitted: (_) => _sendMessage(), // This handles Enter key
-                    textInputAction: TextInputAction.send, // Add this line
-                    keyboardType: TextInputType.text, // Add this line  
-                    maxLines: 1, 
+                    onSubmitted: (_) => _sendMessage(),
+                    textInputAction: TextInputAction.send,
+                    keyboardType: TextInputType.text,
+                    maxLines: 1,
                   ),
                 ),
                 GestureDetector(
@@ -589,11 +599,11 @@ class ModernDrawer extends StatelessWidget {
                       ),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(Icons.chat, color: Colors.white, size: 24),
+                    child: Icon(Icons.menu, color: Colors.white, size: 24),
                   ),
                   SizedBox(width: 16),
                   Text(
-                    'Chat History',
+                    'Navigation',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -603,13 +613,60 @@ class ModernDrawer extends StatelessWidget {
                 ],
               ),
             ),
+            
+            // Go to Homepage
             Container(
-              margin: EdgeInsets.symmetric(horizontal: 16),
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: Material(
-                color: Colors.blue[50],
-                borderRadius: BorderRadius.circular(16),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(16),
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+                child: ListTile(
+                  leading: Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.purple[50],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(Icons.home, color: Colors.purple[600]),
+                  ),
+                  title: Text(
+                    'Chat Homepage',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context); // Close drawer
+                    Navigator.pop(context); // Go back to chat homepage
+                  },
+                ),
+              ),
+            ),
+
+            // Start New Chat
+            Container(
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Material(
+                color: Colors.transparent, // Changed from Colors.blue[50] to transparent
+                borderRadius: BorderRadius.circular(12),
+                child: ListTile(
+                  leading: Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.green[50], // Changed to green to differentiate
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(Icons.add, color: Colors.green[600]), // Changed to green
+                  ),
+                  title: Text(
+                    'Start New Chat',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500, // Changed from w600 to w500
+                      color: Colors.grey[700], // Changed from Colors.blue[700] to grey
+                    ),
+                  ),
                   onTap: () {
                     final newChat = {
                       'title': 'New Chat',
@@ -623,40 +680,40 @@ class ModernDrawer extends StatelessWidget {
                     onSwitchChat?.call(updatedChats.length - 1);
                     Navigator.of(context).pop();
                   },
-                  child: Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.blue[100],
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(Icons.add, color: Colors.blue[600], size: 20),
-                        ),
-                        SizedBox(width: 12),
-                        Text(
-                          'Start New Chat',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.blue[700],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
               ),
             ),
-            SizedBox(height: 16),
+
+            Divider(indent: 16, endIndent: 16),
+            
+            // Previous Chats Section Header
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(Icons.history, size: 18, color: Colors.grey[600]),
+                  SizedBox(width: 8),
+                  Text(
+                    'Previous Chats',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Previous Chats List
             Expanded(
               child: ListView.builder(
                 padding: EdgeInsets.symmetric(horizontal: 16),
                 itemCount: chatHistories.length,
                 itemBuilder: (context, i) {
                   final isSelected = i == currentChatIndex;
+                  final messageCount = (chatHistories[i]['messages'] as List).length;
+                  
                   return Container(
                     margin: EdgeInsets.only(bottom: 8),
                     child: Material(
@@ -665,7 +722,9 @@ class ModernDrawer extends StatelessWidget {
                       child: InkWell(
                         borderRadius: BorderRadius.circular(12),
                         onTap: () {
-                          onSwitchChat?.call(i);
+                          if (!isSelected) {
+                            onSwitchChat?.call(i);
+                          }
                           Navigator.pop(context);
                         },
                         child: Padding(
@@ -682,17 +741,36 @@ class ModernDrawer extends StatelessWidget {
                               ),
                               SizedBox(width: 12),
                               Expanded(
-                                child: Text(
-                                  chatHistories[i]['title'] ?? 'Chat ${i + 1}',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                                    color: isSelected ? Colors.blue[700] : Colors.grey[700],
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      chatHistories[i]['title'] ?? 'Chat ${i + 1}',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                        color: isSelected ? Colors.blue[700] : Colors.grey[700],
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (messageCount > 0)
+                                      Text(
+                                        '$messageCount message${messageCount == 1 ? '' : 's'}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[500],
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               ),
+                              if (isSelected)
+                                Icon(
+                                  Icons.check_circle,
+                                  size: 16,
+                                  color: Colors.blue[400],
+                                ),
                             ],
                           ),
                         ),
