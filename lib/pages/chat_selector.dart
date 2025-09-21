@@ -64,6 +64,110 @@ class _ChatSelectorPageState extends State<ChatSelectorPage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      drawer: Drawer(  // Add this drawer
+        backgroundColor: Colors.white,
+        child: SafeArea(
+          child: Column(
+            children: [
+              Container(
+                padding: EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.purple[400]!, Colors.pink[300]!],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(Icons.menu, color: Colors.white, size: 24),
+                    ),
+                    SizedBox(width: 16),
+                    Text(
+                      'Navigation',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[800],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              ListTile(
+                leading: Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(Icons.home, color: Colors.blue[600]),
+                ),
+                title: Text('Home'),
+                onTap: () {
+                  Navigator.pop(context); // Close drawer
+                  Navigator.pushReplacementNamed(context, '/'); // Navigate to home
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(Icons.ac_unit, color: Colors.green[600]),
+                ),
+                title: Text('Cooling Centers'),
+                onTap: () {
+                  Navigator.pop(context); // Close drawer
+                  Navigator.pushNamed(context, '/cooling-centers'); // Navigate to cooling centers
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.orange[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(Icons.cloud, color: Colors.orange[600]),
+                ),
+                title: Text('Weather'),
+                onTap: () {
+                  Navigator.pop(context); // Close drawer  
+                  Navigator.pushNamed(context, '/weather'); // Navigate to weather
+                },
+              ),
+              Divider(),
+              ListTile(
+                leading: Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.purple[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(Icons.add, color: Colors.purple[600]),
+                ),
+                title: Text('New Chat'),
+                onTap: () {
+                  Navigator.pop(context); // Close drawer
+                  final newChat = {
+                    'title': 'New Chat',
+                    'messages': <Map<String, String>>[],
+                  };
+                  
+                  final updatedChats = List<Map<String, dynamic>>.from(widget.chatHistories)
+                    ..add(newChat);
+                  
+                  widget.onSelectChat(updatedChats, updatedChats.length - 1);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -73,6 +177,7 @@ class _ChatSelectorPageState extends State<ChatSelectorPage>
             elevation: 0,
             backgroundColor: Colors.white,
             iconTheme: IconThemeData(color: Colors.black),
+            automaticallyImplyLeading: false, // Add this line to remove the hamburger menu
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
                 decoration: BoxDecoration(
@@ -411,7 +516,6 @@ class _AnimatedChatCardState extends State<AnimatedChatCard>
             ),
           ),
         ),
-      ),
-    );
+      ));
   }
 }

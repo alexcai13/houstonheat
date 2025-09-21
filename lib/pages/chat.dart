@@ -178,46 +178,46 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
             floating: false,
             pinned: true,
             elevation: 0,
-            backgroundColor: Colors.white,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.blue[50]!, Colors.white],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
+            backgroundColor: Colors.transparent, // Change from Colors.white to transparent
+            centerTitle: true,
+            flexibleSpace: Container( // Wrap FlexibleSpaceBar in Container with gradient
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.blue[50]!, Colors.white],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                 ),
-                child: SafeArea(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Hero(
-                          tag: 'chat_title_${widget.chatIndex}',
-                          child: Material(
-                            color: Colors.transparent,
-                            child: Text(
-                              widget.chatHistories[widget.chatIndex]['title'] ?? 'Chat',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey[800],
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          '${messages.length} messages',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
+              ),
+              child: FlexibleSpaceBar(
+                centerTitle: true,
+                title: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      widget.chatHistories[widget.chatIndex]['title'] ?? 'Chat',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[800],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    Text(
+                      '${messages.length} messages',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+                background: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.blue[50]!, Colors.white],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
                     ),
                   ),
                 ),
@@ -378,8 +378,10 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
                       contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                     ),
                     style: TextStyle(fontSize: 16),
-                    onSubmitted: (_) => _sendMessage(),
-                    maxLines: null,
+                    onSubmitted: (_) => _sendMessage(), // This handles Enter key
+                    textInputAction: TextInputAction.send, // Add this line
+                    keyboardType: TextInputType.text, // Add this line  
+                    maxLines: 1, 
                   ),
                 ),
                 GestureDetector(
