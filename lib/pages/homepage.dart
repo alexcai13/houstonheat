@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
+import "dart:math";
 
 IconData getWeatherIcon(String? condition) {
   if (condition == null) return Icons.help_outline;
@@ -153,7 +154,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
   Future<void> fetchDailyForecast() async {
     final apiKey = "***REMOVED***";
     final dailyUrl =
-        "https://weather.googleapis.com/v1/forecast/days:lookup?key=$apiKey&location.latitude=${widget.lat}&location.longitude=${widget.lon}&days=7";
+        "https://weather.googleapis.com/v1/forecast/days:lookup?key=$apiKey&location.latitude=${widget.lat}&location.longitude=${widget.lon}&days=7&pageSize=7";
 
     final response = await http.get(Uri.parse(dailyUrl)).timeout(Duration(seconds: 10));
 
@@ -509,7 +510,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
                                 width: 40,
                                 height: 40,
                                 decoration: BoxDecoration(
-                                  color: Colors.grey[100],
+                                  color: Colors.white,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: day['iconBaseUri'] != null
@@ -554,14 +555,14 @@ class _WeatherScreenState extends State<WeatherScreen> {
                               
                               const SizedBox(width: 20),
                               
-                              // High/Low temps
+                              // High/Low temps with same size
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   Text(
                                     "${day['high'].toStringAsFixed(0)}°",
                                     style: textStyle.copyWith(
-                                      fontSize: 18,
+                                      fontSize: 16,  // Changed from 18 to 16
                                       fontWeight: FontWeight.bold,
                                       color: Colors.red[600],
                                     ),
@@ -569,7 +570,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
                                   Text(
                                     "${day['low'].toStringAsFixed(0)}°",
                                     style: textStyle.copyWith(
-                                      fontSize: 16,
+                                      fontSize: 16,  // Keep at 16
                                       color: Colors.blue[600],
                                     ),
                                   ),
@@ -590,8 +591,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
     );
   }
 }
-
-// Updated curved line painter for hourly
+// Replace the _CurvedLinePainter class with this version:
 class _CurvedLinePainter extends CustomPainter {
   final List<Offset> points;
   final bool showActualTemp;
@@ -602,7 +602,9 @@ class _CurvedLinePainter extends CustomPainter {
     if (points.length < 2) return;
 
     final paint = Paint()
-      ..color = showActualTemp ? Colors.blue[400]! : Colors.red[400]!
+      ..color = showActualTemp 
+          ? (Colors.blue[400] ?? Colors.blue)
+          : (Colors.red[400] ?? Colors.red)
       ..strokeWidth = 3
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -614,21 +616,56 @@ class _CurvedLinePainter extends CustomPainter {
       final prev = points[i - 1];
       final curr = points[i];
       
-      // Make the curve less dramatic by reducing the control point offset
-      final dx = curr.dx - prev.dx;
-      final dy = curr.dy - prev.dy;
-      
-      // Use smaller control point distances for smoother, less dramatic curves
-      final controlPoint1 = Offset(
-        prev.dx + dx * 0.3, // Reduced from 0.5 to 0.3
-        prev.dy + dy * 0.1, // Much smaller vertical offset
-      );
-      final controlPoint2 = Offset(
-        prev.dx + dx * 0.7, // Reduced from 0.5 to 0.7
-        curr.dy - dy * 0.1, // Much smaller vertical offset
-      );
-      
-      path.cubicTo(controlPoint1.dx, controlPoint1.dy, controlPoint2.dx, controlPoint2.dy, curr.dx, curr.dy);
+      if (i == points.length - 1) {
+        // Last point - just draw straight line
+        path.lineTo(curr.dx, curr.dy);
+      } else {
+        final next = points[i + 1];
+        
+        // Calculate the curve radius (smaller = tighter curve)
+        final curveRadius = 15.0;
+        
+        // Direction vectors
+        final dx1 = curr.dx - prev.dx;
+        final dy1 = curr.dy - prev.dy;
+        final dx2 = next.dx - curr.dx;
+        final dy2 = next.dy - curr.dy;
+        
+        // Normalize the distances
+        final dist1 = (dx1 * dx1 + dy1 * dy1).abs();
+        final dist2 = (dx2 * dx2 + dy2 * dy2).abs();
+        
+        if (dist1 > 0 && dist2 > 0) {
+          final len1 = sqrt(dist1);
+          final len2 = sqrt(dist2);
+          
+          // Calculate points before and after the current point for smooth curve
+          final t1 = (curveRadius / len1).clamp(0.0, 0.5);
+          final t2 = (curveRadius / len2).clamp(0.0, 0.5);
+          
+          final beforePoint = Offset(
+            curr.dx - dx1 * t1,
+            curr.dy - dy1 * t1,
+          );
+          
+          final afterPoint = Offset(
+            curr.dx + dx2 * t2,
+            curr.dy + dy2 * t2,
+          );
+          
+          // Draw straight line to the point before the curve
+          path.lineTo(beforePoint.dx, beforePoint.dy);
+          
+          // Draw smooth curve around the point
+          path.quadraticBezierTo(
+            curr.dx, curr.dy,  // Control point is the actual data point
+            afterPoint.dx, afterPoint.dy,
+          );
+        } else {
+          // Fallback to straight line if calculations fail
+          path.lineTo(curr.dx, curr.dy);
+        }
+      }
     }
     
     canvas.drawPath(path, paint);
