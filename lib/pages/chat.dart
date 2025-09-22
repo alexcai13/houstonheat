@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../services/chat_service.dart';
-
 class ChatPage extends StatefulWidget {
   final Map<String, dynamic>? weatherData;
   final List<Map<String, dynamic>> chatHistories;
@@ -614,7 +613,7 @@ class ModernDrawer extends StatelessWidget {
               ),
             ),
             
-            // Go to Homepage
+            // Start New Chat
             Container(
               margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: Material(
@@ -624,47 +623,17 @@ class ModernDrawer extends StatelessWidget {
                   leading: Container(
                     padding: EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.purple[50],
+                      color: Colors.green[50],
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(Icons.home, color: Colors.purple[600]),
-                  ),
-                  title: Text(
-                    'Chat Homepage',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context); // Close drawer
-                    Navigator.pop(context); // Go back to chat homepage
-                  },
-                ),
-              ),
-            ),
-
-            // Start New Chat
-            Container(
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Material(
-                color: Colors.transparent, // Changed from Colors.blue[50] to transparent
-                borderRadius: BorderRadius.circular(12),
-                child: ListTile(
-                  leading: Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.green[50], // Changed to green to differentiate
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(Icons.add, color: Colors.green[600]), // Changed to green
+                    child: Icon(Icons.add, color: Colors.green[600]),
                   ),
                   title: Text(
                     'Start New Chat',
                     style: TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.w500, // Changed from w600 to w500
-                      color: Colors.grey[700], // Changed from Colors.blue[700] to grey
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[700],
                     ),
                   ),
                   onTap: () {
