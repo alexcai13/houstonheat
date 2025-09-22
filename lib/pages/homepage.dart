@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import "dart:math";
@@ -28,6 +27,17 @@ Color tempToColor(double tempF) {
   return Colors.red[300]!;
 }
 
+IconData getPrecipitationIcon(String? condition) {
+  if (condition == null) return Icons.water_drop;
+  final cond = condition.toLowerCase();
+  if (cond.contains('snow') || cond.contains('blizzard') || cond.contains('flurr')) return Icons.ac_unit;
+  if (cond.contains('sleet') || cond.contains('freezing')) return Icons.grain;
+  if (cond.contains('hail')) return Icons.circle;
+  if (cond.contains('thunder') || cond.contains('storm')) return Icons.flash_on;
+  if (cond.contains('rain') || cond.contains('shower') || cond.contains('drizzle')) return Icons.water_drop;
+  return Icons.water_drop; // Default to water drop for general precipitation
+}
+
 class WeatherScreen extends StatefulWidget {
   final double lat;
   final double lon;
@@ -46,21 +56,48 @@ class WeatherScreen extends StatefulWidget {
   _WeatherScreenState createState() => _WeatherScreenState();
 }
 
-class _WeatherScreenState extends State<WeatherScreen> {
+
+class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateMixin {
   double? currentTempF;
   double? feelsLikeF;
   String? condition;
   String? iconBaseUri;
   List<Map<String, dynamic>> hourlyForecast = [];
   List<Map<String, dynamic>> dailyForecast = [];
-  bool showActualTemp = true; // For hourly graph: true = temperature, false = feels like
+  bool showActualTemp = true;
   bool isLoading = true;
   String? errorMessage;
+  
+  late AnimationController _fadeController;
+  late AnimationController _slideController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
     super.initState();
+    _fadeController = AnimationController(
+      duration: Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _slideController = AnimationController(
+      duration: Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeOut),
+    );
+    _slideAnimation = Tween<Offset>(begin: Offset(0, 0.1), end: Offset.zero).animate(
+      CurvedAnimation(parent: _slideController, curve: Curves.easeOut),
+    );
     fetchWeatherData();
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    _slideController.dispose();
+    super.dispose();
   }
 
   double _cToF(double c) => (c * 9 / 5) + 32;
@@ -81,6 +118,9 @@ class _WeatherScreenState extends State<WeatherScreen> {
       setState(() {
         isLoading = false;
       });
+      
+      _fadeController.forward();
+      _slideController.forward();
     } catch (e) {
       print('Error fetching weather data: $e');
       setState(() {
@@ -107,7 +147,6 @@ class _WeatherScreenState extends State<WeatherScreen> {
         condition = data['weatherCondition']['description']['text'];
         iconBaseUri = data['weatherCondition']['iconBaseUri'];
 
-        // Call the callback with the weather data
         if (widget.onWeatherData != null) {
           widget.onWeatherData!({
             "currentTempF": currentTempF,
@@ -131,10 +170,19 @@ class _WeatherScreenState extends State<WeatherScreen> {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
+      final now = DateTime.now();
       
       setState(() {
-        hourlyForecast = List<Map<String, dynamic>>.from(
-          (data['forecastHours'] as List).map((entry) {
+         hourlyForecast = List<Map<String, dynamic>>.from(
+        (data['forecastHours'] as List)
+          .map((entry) {
+            final forecastDateTime = DateTime(
+              entry['displayDateTime']['year'] as int,
+              entry['displayDateTime']['month'] as int,
+              entry['displayDateTime']['day'] as int,
+              entry['displayDateTime']['hours'] as int,
+            );
+            
             final hours = entry['displayDateTime']['hours'] as int;
             return {
               "time": "${hours % 12 == 0 ? 12 : hours % 12}${hours >= 12 ? "PM" : "AM"}",
@@ -142,10 +190,17 @@ class _WeatherScreenState extends State<WeatherScreen> {
               "feels": _cToF((entry['feelsLikeTemperature']['degrees'] as num).toDouble()),
               "condition": entry['weatherCondition']['description']['text'],
               "iconBaseUri": entry['weatherCondition']['iconBaseUri'],
+              "dateTime": forecastDateTime,
             };
-          }),
-        );
-      });
+          })
+          .where((forecast) {
+            // Only include forecasts that are in the future
+            return (forecast['dateTime'] as DateTime).isAfter(now);
+          })
+          .take(12) // Take only the next 12 future hours
+          .toList(),
+      );
+    });
     } else {
       throw Exception('Failed to load hourly forecast: ${response.statusCode}');
     }
@@ -169,7 +224,6 @@ class _WeatherScreenState extends State<WeatherScreen> {
               final date = DateTime(displayDate['year'], displayDate['month'], displayDate['day']);
               final dayName = DateFormat('EEE').format(date);
               
-              // Use daytimeForecast for main weather condition and precipitation
               final daytimeForecast = entry['daytimeForecast'];
               final precipChance = daytimeForecast['precipitation']['probability']['percent'] ?? 0;
               
@@ -193,405 +247,657 @@ class _WeatherScreenState extends State<WeatherScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final textStyle = GoogleFonts.manrope(color: Colors.black);
+    final textStyle = GoogleFonts.manrope(color: Colors.grey[800]);
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // City name at top
-                Center(
-                  child: Text(
-                    widget.cityName,
-                    style: textStyle.copyWith(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
+      backgroundColor: Colors.white, // Changed to white
+      body: CustomScrollView( // Removed SafeArea wrapper
+        slivers: [
+          // Modern App Bar with white gradient
+          // Replace the SliverAppBar section with this updated version:
+
+          SliverAppBar(
+            expandedHeight: 120,
+            floating: false,
+            pinned: true,
+            elevation: 0,
+            backgroundColor: Colors.white,
+            automaticallyImplyLeading: false,
+            flexibleSpace: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.blue[50]!, Colors.white],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: [0.0, 1.0], // Ensure smooth transition
+                ),
+              ),
+              child: SafeArea(
+                child: FlexibleSpaceBar(
+                  centerTitle: true,
+                  titlePadding: EdgeInsets.only(
+                    left: 16,
+                    right: 16,
+                    bottom: 16,
+                  ),
+                  title: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isCollapsed = constraints.maxHeight <= 80;
+                      return Text(
+                        widget.cityName,
+                        style: GoogleFonts.manrope(
+                          fontSize: isCollapsed ? 18 : 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[800],
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      );
+                    },
                   ),
                 ),
-                const SizedBox(height: 16),
+              ),
+            ),
+          ),
 
-                if (isLoading) ...[
-                  SizedBox(
-                    height: 400,
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircularProgressIndicator(),
-                          SizedBox(height: 16),
-                          Text("Loading weather data...", style: textStyle),
-                        ],
-                      ),
+          if (isLoading) ...[
+            SliverFillRemaining(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.blue[400]!),
                     ),
-                  ),
-                ] else if (errorMessage != null) ...[
-                  SizedBox(
-                    height: 400,
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.error_outline, size: 64, color: Colors.red),
-                          SizedBox(height: 16),
-                          Text(
-                            errorMessage!,
-                            style: textStyle.copyWith(color: Colors.red),
-                            textAlign: TextAlign.center,
-                          ),
-                          SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: fetchWeatherData,
-                            child: Text("Retry"),
-                          ),
-                        ],
-                      ),
+                    SizedBox(height: 20),
+                    Text(
+                      "Loading weather data...",
+                      style: textStyle.copyWith(fontSize: 16),
                     ),
-                  ),
-                ] else if (currentTempF != null) ...[
-                  // Current weather display
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      iconBaseUri != null
-                          ? SvgPicture.network(
-                              iconBaseUri! + '.svg',
-                              width: 60,
-                              height: 60,
-                              errorBuilder: (context, error, stackTrace) => Icon(Icons.help_outline, size: 60),
-                            )
-                          : Icon(Icons.help_outline, size: 60),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(condition ?? "",
-                            style: textStyle.copyWith(
-                                fontSize: 18, fontWeight: FontWeight.w500)),
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text("${currentTempF?.toStringAsFixed(0)}°F",
-                              style: textStyle.copyWith(
-                                  fontSize: 54, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 4),
-                          Text("Feels like: ${feelsLikeF?.toStringAsFixed(0)}°F",
-                              style: textStyle.copyWith(
-                                  fontSize: 16, fontWeight: FontWeight.w500)),
-                        ],
+                  ],
+                ),
+              ),
+            ),
+          ] else if (errorMessage != null) ...[
+            SliverFillRemaining(
+              child: Center(
+                child: Container(
+                  margin: EdgeInsets.all(20),
+                  padding: EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 20,
+                        offset: Offset(0, 10),
                       ),
                     ],
                   ),
-
-                  const SizedBox(height: 28),
-
-                  // Temperature vs Feels Like toggle for hourly graph
-                  if (hourlyForecast.isNotEmpty) ...[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: showActualTemp ? Colors.blue[400] : Colors.grey[300],
-                            elevation: showActualTemp ? 2 : 0,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              showActualTemp = true;
-                            });
-                          },
-                          child: Text(
-                            "Temperature",
-                            style: textStyle.copyWith(
-                              color: showActualTemp ? Colors.white : Colors.black,
-                              fontWeight: FontWeight.bold,
-                            ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.cloud_off, size: 64, color: Colors.red[400]),
+                      SizedBox(height: 16),
+                      Text(
+                        "Weather Unavailable",
+                        style: textStyle.copyWith(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        errorMessage!,
+                        style: textStyle.copyWith(color: Colors.grey[600]),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: fetchWeatherData,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue[400],
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: !showActualTemp ? Colors.red[400] : Colors.grey[300],
-                            elevation: !showActualTemp ? 2 : 0,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              showActualTemp = false;
-                            });
-                          },
-                          child: Text(
-                            "Feels Like",
-                            style: textStyle.copyWith(
-                              color: !showActualTemp ? Colors.white : Colors.black,
-                              fontWeight: FontWeight.bold,
+                        child: Text("Try Again"),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ] else if (currentTempF != null) ...[
+            SliverPadding(
+              padding: EdgeInsets.all(20),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  // Current Weather Card
+                  // Replace the Current Weather Card section with this updated version:
+
+                  // Current Weather Card
+                  FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: SlideTransition(
+                      position: _slideAnimation,
+                      child: Container(
+                        padding: EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 20,
+                              offset: Offset(0, 10),
                             ),
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Hourly chart
-                    SizedBox(
-                      height: 180,
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: SizedBox(
-                          width: hourlyForecast.length * 60.0,
-                          child: Column(
-                            children: [
-                              // Times row
-                              SizedBox(
-                                height: 40,
-                                child: Row(
-                                  children: [
-                                    for (int i = 0; i < hourlyForecast.length; i++)
-                                      SizedBox(
-                                        width: 60,
-                                        child: Center(
-                                          child: Text(
-                                            hourlyForecast[i]['time'],
-                                            style: textStyle.copyWith(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
+                        child: Row(
+                          children: [
+                            // Weather Icon (Left side)
+                            Container(
+                              width: 100,
+                              height: 100,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[50],
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Padding(
+                                padding: EdgeInsets.all(8),
+                                child: iconBaseUri != null
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: SvgPicture.network(
+                                          iconBaseUri! + '.svg',
+                                          width: 84,
+                                          height: 84,
+                                          fit: BoxFit.contain,
+                                          errorBuilder: (context, error, stackTrace) => 
+                                              Icon(getWeatherIcon(condition), size: 50, color: Colors.blue[400]),
                                         ),
+                                      )
+                                    : Icon(getWeatherIcon(condition), size: 50, color: Colors.blue[400]),
+                              ),
+                            ),
+                            
+                            SizedBox(width: 24),
+                            
+                            // Main Temperature Section (Center)
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    "${currentTempF?.toStringAsFixed(0)}°F",
+                                    style: textStyle.copyWith(
+                                      fontSize: 48,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.grey[800],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            
+                            SizedBox(width: 24),
+                            
+                            // Feels Like Section (Right side)
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text(
+                                  "Feels like",
+                                  style: textStyle.copyWith(
+                                    fontSize: 14,
+                                    color: Colors.grey[500],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: tempToColor(feelsLikeF ?? 0).withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: tempToColor(feelsLikeF ?? 0).withValues(alpha: 0.6),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    "${feelsLikeF?.toStringAsFixed(0)}°F",
+                                    style: textStyle.copyWith(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: tempToColor(feelsLikeF ?? 0).withValues(alpha: 0.9),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  SizedBox(height: 24),
+
+                  // Hourly Forecast Section
+                  if (hourlyForecast.isNotEmpty) ...[
+                    Container(
+                      padding: EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 10,
+                            offset: Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.schedule, color: Colors.purple[400], size: 24),
+                              SizedBox(width: 8),
+                              Text(
+                                'Hourly Forecast',
+                                style: textStyle.copyWith(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          
+                          SizedBox(height: 16),
+                          
+                          // Toggle Buttons
+                          Row(
+                            children: [
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () => setState(() => showActualTemp = true),
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: showActualTemp ? Colors.blue[400] : Colors.grey[100],
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      "Temperature",
+                                      textAlign: TextAlign.center,
+                                      style: textStyle.copyWith(
+                                        color: showActualTemp ? Colors.white : Colors.grey[600],
+                                        fontWeight: FontWeight.w600,
                                       ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () => setState(() => showActualTemp = false),
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: !showActualTemp ? Colors.red[400] : Colors.grey[100],
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      "Feels Like",
+                                      textAlign: TextAlign.center,
+                                      style: textStyle.copyWith(
+                                        color: !showActualTemp ? Colors.white : Colors.grey[600],
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          
+                          SizedBox(height: 20),
+                          
+                          // Hourly Chart
+                          SizedBox(
+                            height: 180,
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: SizedBox(
+                                width: hourlyForecast.length * 60.0,
+                                child: Column(
+                                  children: [
+                                    // Times row
+                                    SizedBox(
+                                      height: 40,
+                                      child: Row(
+                                        children: [
+                                          for (int i = 0; i < hourlyForecast.length; i++)
+                                            SizedBox(
+                                              width: 60,
+                                              child: Center(
+                                                child: Text(
+                                                  hourlyForecast[i]['time'],
+                                                  style: textStyle.copyWith(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Colors.grey[600],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                    
+                                    // Chart area
+                                    Expanded(
+                                      child: LayoutBuilder(
+                                        builder: (context, constraints) {
+                                          final chartHeight = constraints.maxHeight;
+                                          final topPadding = 55.0;
+                                          final bottomPadding = 20.0;
+
+                                          final allTemps = [
+                                            ...hourlyForecast.map((e) => e['temp'] as double),
+                                            ...hourlyForecast.map((e) => e['feels'] as double),
+                                          ];
+                                          final minY = allTemps.reduce((a, b) => a < b ? a : b);
+                                          final maxY = allTemps.reduce((a, b) => a > b ? a : b);
+                                          final tempRange = (maxY - minY) == 0 ? 1 : (maxY - minY);
+
+                                          final temps = hourlyForecast
+                                              .map((e) => showActualTemp ? e['temp'] as double : e['feels'] as double)
+                                              .toList();
+
+                                          double getY(double temp) {
+                                            final availableHeight = chartHeight - topPadding - bottomPadding;
+                                            return ((maxY - temp) / tempRange) * availableHeight + topPadding;
+                                          }
+
+                                          return Stack(
+                                            children: [
+                                              // Draw connecting line
+                                              CustomPaint(
+                                                size: Size(hourlyForecast.length * 60.0, chartHeight),
+                                                painter: _CurvedLinePainter(
+                                                  hourlyForecast.asMap().entries.map((entry) {
+                                                    final index = entry.key;
+                                                    final temp = temps[index];
+                                                    return Offset(60.0 * index + 30.0, getY(temp));
+                                                  }).toList(),
+                                                  showActualTemp,
+                                                ),
+                                              ),
+                                              for (int i = 0; i < hourlyForecast.length; i++) ...[
+                                                // Weather icon
+                                                // Replace the weather icon section in the hourly chart with this:
+
+                                                // Weather icon
+                                                Positioned(
+                                                  left: 60.0 * i + 30.0 - 16, // Adjusted for bigger icon
+                                                  top: getY(temps[i]) - 16, // Adjusted for bigger icon
+                                                  child: Container(
+                                                    width: 32, // Made bigger
+                                                    height: 32, // Made bigger
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.white, // Same as graph/card background
+                                                      // Removed borderRadius - no rounded corners
+                                                      // Removed boxShadow
+                                                    ),
+                                                    child: hourlyForecast[i]['iconBaseUri'] != null
+                                                        ? Image.network(
+                                                            hourlyForecast[i]['iconBaseUri'] + '.png',
+                                                            width: 28, // Bigger icon
+                                                            height: 28, // Bigger icon
+                                                            fit: BoxFit.contain, // Changed from cover to contain to prevent cutoff
+                                                            errorBuilder: (context, error, stackTrace) => 
+                                                                Icon(getWeatherIcon(hourlyForecast[i]['condition']), 
+                                                                    size: 20, color: Colors.grey[600]), // Bigger fallback icon
+                                                          )
+                                                        : Icon(getWeatherIcon(hourlyForecast[i]['condition']), 
+                                                              size: 20, color: Colors.grey[600]), // Bigger fallback icon
+                                                  ),
+                                                ),
+                                                // Temperature label
+                                               Positioned(
+                                                left: 60.0 * i + 30.0 - 15,
+                                                top: getY(temps[i]) - 50, // Moved up more to account for bigger icon
+                                                child: Container(
+                                                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: (showActualTemp ? Colors.blue[400] : Colors.red[400])!.withValues(alpha: 0.9),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  child: Text(
+                                                    "${temps[i].toStringAsFixed(0)}°",
+                                                    style: textStyle.copyWith(
+                                                      fontSize: 11,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              ],
+                                            ],
+                                          );
+                                        },
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
-                              // Chart area
-                              Expanded(
-                                child: LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    final chartHeight = constraints.maxHeight;
-                                    final topPadding = 40.0; // Increased from 20.0 to give more space for labels
-                                    final bottomPadding = 20.0;
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
 
-                                    final allTemps = [
-                                      ...hourlyForecast.map((e) => e['temp'] as double),
-                                      ...hourlyForecast.map((e) => e['feels'] as double),
-                                    ];
-                                    final minY = allTemps.reduce((a, b) => a < b ? a : b);
-                                    final maxY = allTemps.reduce((a, b) => a > b ? a : b);
-                                    final tempRange = (maxY - minY) == 0 ? 1 : (maxY - minY);
+                    SizedBox(height: 24),
+                  ],
 
-                                    final temps = hourlyForecast
-                                        .map((e) => showActualTemp ? e['temp'] as double : e['feels'] as double)
-                                        .toList();
-
-                                    double getY(double temp) {
-                                      final availableHeight = chartHeight - topPadding - bottomPadding;
-                                      return ((maxY - temp) / tempRange) * availableHeight + topPadding;
-                                    }
-
-                                    return Stack(
-                                      children: [
-                                        // Draw connecting line
-                                        CustomPaint(
-                                          size: Size(hourlyForecast.length * 60.0, chartHeight),
-                                          painter: _CurvedLinePainter(
-                                            hourlyForecast.asMap().entries.map((entry) {
-                                              final index = entry.key;
-                                              final temp = temps[index];
-                                              return Offset(60.0 * index + 30.0, getY(temp));
-                                            }).toList(),
-                                            showActualTemp,
+                  // 7-Day Forecast
+                  if (dailyForecast.isNotEmpty) ...[
+                    Container(
+                      padding: EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 10,
+                            offset: Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.calendar_today, color: Colors.purple[400], size: 24),
+                              SizedBox(width: 8),
+                              Text(
+                                '7-Day Forecast',
+                                style: textStyle.copyWith(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          
+                          SizedBox(height: 16),
+                          
+                          Column(
+                            children: dailyForecast.asMap().entries.map((entry) {
+                              final index = entry.key;
+                              final day = entry.value;
+                              final precipChance = day['precipitationChance'] as int;
+                              
+                              return Container(
+                                margin: EdgeInsets.only(bottom: index == dailyForecast.length - 1 ? 0 : 12),
+                                padding: EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[50],
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Colors.grey[200]!,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    // Day and date - Fixed width
+                                    SizedBox(
+                                      width: 80,
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            day['day'],
+                                            style: textStyle.copyWith(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
-                                        ),
-                                        for (int i = 0; i < hourlyForecast.length; i++) ...[
-                                          // Weather icon
-                                          Positioned(
-                                            left: 60.0 * i + 30.0 - 9,
-                                            top: getY(temps[i]) - 9,
-                                            child: hourlyForecast[i]['iconBaseUri'] != null
-                                                ? Image.network(
-                                                    hourlyForecast[i]['iconBaseUri'] + '.png',
-                                                    width: 18,
-                                                    height: 18,
-                                                    errorBuilder: (context, error, stackTrace) => 
-                                                        Icon(Icons.help_outline, size: 18, color: Colors.grey[700]),
-                                                  )
-                                                : Icon(Icons.help_outline, size: 18, color: Colors.grey[700]),
-                                          ),
-                                          // Temperature label
-                                          Positioned(
-                                            left: 60.0 * i + 30.0 - 15,
-                                            top: getY(temps[i]) - 35, // Increased from -30 to -35 for more space
-                                            child: Text(
-                                              "${temps[i].toStringAsFixed(0)}°",
-                                              style: textStyle.copyWith(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.bold,
-                                                color: showActualTemp ? Colors.blue[600] : Colors.red[600],
-                                              ),
+                                          Text(
+                                            day['date'],
+                                            style: textStyle.copyWith(
+                                              fontSize: 14,
+                                              color: Colors.grey[600],
                                             ),
                                           ),
                                         ],
-                                      ],
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 20),
-                  ],
-
-                  // 7-Day forecast list
-                  if (dailyForecast.isNotEmpty) ...[
-                    Text(
-                      '7-Day Forecast',
-                      style: textStyle.copyWith(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    Column(
-                      children: dailyForecast.map((day) {
-                        final precipChance = day['precipitationChance'] as int;
-                        
-                        return Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.grey[200]!),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.05),
-                                blurRadius: 4,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              // Day and date
-                              Expanded(
-                                flex: 2,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      day['day'],
-                                      style: textStyle.copyWith(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    Text(
-                                      day['date'],
-                                      style: textStyle.copyWith(
-                                        fontSize: 14,
-                                        color: Colors.grey[600],
+                                    
+                                    SizedBox(width: 16),
+                                    
+                               
+                                    // Weather icon - Fixed position
+                                    Container(
+                                      width: 48,
+                                      height: 48,
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[50], // Exact same as cell background
+                                        // Removed borderRadius to make it square
+                                        // Removed boxShadow
                                       ),
+                                      child: day['iconBaseUri'] != null
+                                          ? Image.network(
+                                              day['iconBaseUri'] + '.png',
+                                              width: 32,
+                                              height: 32,
+                                              fit: BoxFit.contain,
+                                              errorBuilder: (context, error, stackTrace) => 
+                                                  Icon(getWeatherIcon(day['condition']), 
+                                                      size: 24, color: Colors.grey[600]),
+                                            )
+                                          : Icon(getWeatherIcon(day['condition']), 
+                                                size: 24, color: Colors.grey[600]),
+                                    ),
+                                    
+                                    SizedBox(width: 16),
+                                    
+                                    // Precipitation - Fixed width space
+                                    // Replace the precipitation section in the 7-day forecast with this:
+
+                                    // Precipitation - Fixed width space
+                                    SizedBox(
+                                      width: 60, // Fixed width to prevent icon movement
+                                      child: Container(
+                                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: precipChance > 0 ? Colors.blue[50] : Colors.orange[50], // Different color for 0%
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              precipChance > 0 
+                                                  ? getPrecipitationIcon(day['condition']) // Use dynamic icon for precipitation
+                                                  : Icons.wb_sunny, // Sunny icon for 0%
+                                              size: 14, 
+                                              color: precipChance > 0 ? Colors.blue[600] : Colors.orange[600], // Different colors
+                                            ),
+                                            SizedBox(width: 4),
+                                            Text(
+                                              "$precipChance%",
+                                              style: textStyle.copyWith(
+                                                fontSize: 12,
+                                                color: precipChance > 0 ? Colors.blue[600] : Colors.orange[600],
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    
+                                    // Spacer to push temperatures to the right
+                                    Spacer(),
+                                    
+                                    // High/Low temps - Fixed position on the right
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          "${day['high'].toStringAsFixed(0)}°",
+                                          style: textStyle.copyWith(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.red[600],
+                                          ),
+                                        ),
+                                        Text(
+                                          "${day['low'].toStringAsFixed(0)}°",
+                                          style: textStyle.copyWith(
+                                            fontSize: 16,
+                                            color: Colors.blue[600],
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
-                              ),
-                              
-                              // Weather icon
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: day['iconBaseUri'] != null
-                                    ? Image.network(
-                                        day['iconBaseUri'] + '.png',
-                                        width: 30,
-                                        height: 30,
-                                        errorBuilder: (context, error, stackTrace) => 
-                                            Icon(Icons.help_outline, size: 24, color: Colors.grey[700]),
-                                      )
-                                    : Icon(Icons.help_outline, size: 24, color: Colors.grey[700]),
-                              ),
-                              
-                              const SizedBox(width: 16),
-                              
-                              // Precipitation
-                              Column(
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(Icons.water_drop, size: 16, color: Colors.blue[400]),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        "$precipChance%",
-                                        style: textStyle.copyWith(
-                                          fontSize: 14,
-                                          color: Colors.blue[600],
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  Text(
-                                    "Rain",
-                                    style: textStyle.copyWith(
-                                      fontSize: 12,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              
-                              const SizedBox(width: 20),
-                              
-                              // High/Low temps with same size
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    "${day['high'].toStringAsFixed(0)}°",
-                                    style: textStyle.copyWith(
-                                      fontSize: 16,  // Changed from 18 to 16
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.red[600],
-                                    ),
-                                  ),
-                                  Text(
-                                    "${day['low'].toStringAsFixed(0)}°",
-                                    style: textStyle.copyWith(
-                                      fontSize: 16,  // Keep at 16
-                                      color: Colors.blue[600],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                              );
+                            }).toList(),
                           ),
-                        );
-                      }).toList(),
+                        ],
+                      ),
                     ),
                   ],
-                ],
-              ],
+                  
+                  // Bottom padding for safe area
+                  SizedBox(height: 20),
+                ]),
+              ),
             ),
-          ),
-        ),
+          ],
+        ],
       ),
     );
   }
 }
-// Replace the _CurvedLinePainter class with this version:
+
+// Updated curved line painter
 class _CurvedLinePainter extends CustomPainter {
   final List<Offset> points;
   final bool showActualTemp;
@@ -609,66 +915,10 @@ class _CurvedLinePainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    final path = Path();
-    path.moveTo(points[0].dx, points[0].dy);
-    
-    for (int i = 1; i < points.length; i++) {
-      final prev = points[i - 1];
-      final curr = points[i];
-      
-      if (i == points.length - 1) {
-        // Last point - just draw straight line
-        path.lineTo(curr.dx, curr.dy);
-      } else {
-        final next = points[i + 1];
-        
-        // Calculate the curve radius (smaller = tighter curve)
-        final curveRadius = 15.0;
-        
-        // Direction vectors
-        final dx1 = curr.dx - prev.dx;
-        final dy1 = curr.dy - prev.dy;
-        final dx2 = next.dx - curr.dx;
-        final dy2 = next.dy - curr.dy;
-        
-        // Normalize the distances
-        final dist1 = (dx1 * dx1 + dy1 * dy1).abs();
-        final dist2 = (dx2 * dx2 + dy2 * dy2).abs();
-        
-        if (dist1 > 0 && dist2 > 0) {
-          final len1 = sqrt(dist1);
-          final len2 = sqrt(dist2);
-          
-          // Calculate points before and after the current point for smooth curve
-          final t1 = (curveRadius / len1).clamp(0.0, 0.5);
-          final t2 = (curveRadius / len2).clamp(0.0, 0.5);
-          
-          final beforePoint = Offset(
-            curr.dx - dx1 * t1,
-            curr.dy - dy1 * t1,
-          );
-          
-          final afterPoint = Offset(
-            curr.dx + dx2 * t2,
-            curr.dy + dy2 * t2,
-          );
-          
-          // Draw straight line to the point before the curve
-          path.lineTo(beforePoint.dx, beforePoint.dy);
-          
-          // Draw smooth curve around the point
-          path.quadraticBezierTo(
-            curr.dx, curr.dy,  // Control point is the actual data point
-            afterPoint.dx, afterPoint.dy,
-          );
-        } else {
-          // Fallback to straight line if calculations fail
-          path.lineTo(curr.dx, curr.dy);
-        }
-      }
+    // Just draw straight lines between each point
+    for (int i = 0; i < points.length - 1; i++) {
+      canvas.drawLine(points[i], points[i + 1], paint);
     }
-    
-    canvas.drawPath(path, paint);
   }
 
   @override

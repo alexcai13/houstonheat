@@ -73,61 +73,85 @@ class _ChatSelectorPageState extends State<ChatSelectorPage>
             elevation: 0,
             backgroundColor: Colors.white,
             iconTheme: IconThemeData(color: Colors.black),
-            automaticallyImplyLeading: false, // Add this line to remove hamburger menu
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.purple[50]!, Colors.white],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
+            automaticallyImplyLeading: false,
+            title: null, // We'll handle title in flexibleSpace
+            flexibleSpace: LayoutBuilder(
+              builder: (context, constraints) {
+                // Calculate how much the app bar is collapsed
+                final double appBarHeight = constraints.biggest.height;
+                final double collapsedHeight = kToolbarHeight + MediaQuery.of(context).padding.top;
+                final double expandedHeight = 200 + MediaQuery.of(context).padding.top;
+                
+                // Calculate collapse progress (0.0 = fully expanded, 1.0 = fully collapsed)
+                final double collapseProgress = ((expandedHeight - appBarHeight) / (expandedHeight - collapsedHeight)).clamp(0.0, 1.0);
+                
+                // Calculate dynamic font sizes
+                final double titleFontSize = 32 - (collapseProgress * 14); // From 32 to 18
+                final double subtitleFontSize = 16 - (collapseProgress * 4); // From 16 to 12
+                
+                return Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.purple[50]!, Colors.white],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
                   ),
-                ),
-                child: SafeArea(
-                  child: SlideTransition(
-                    position: _headerSlideAnimation,
-                    child: FadeTransition(
-                      opacity: _headerFadeAnimation,
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Hero(
-                              tag: 'chat_selector_title',
-                              child: Material(
-                                color: Colors.transparent,
-                                child: Text(
-                                  'Your Chats',
-                                  style: TextStyle(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey[800],
-                                    height: 1.1,
+                  child: SafeArea(
+                    child: SlideTransition(
+                      position: _headerSlideAnimation,
+                      child: FadeTransition(
+                        opacity: _headerFadeAnimation,
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: collapseProgress > 0.5 ? 8 : 32, // Less padding when collapsed
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: collapseProgress > 0.5 ? MainAxisAlignment.center : MainAxisAlignment.end,
+                            children: [
+                              Hero(
+                                tag: 'chat_selector_title',
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: Text(
+                                    'Your Chats',
+                                    style: TextStyle(
+                                      fontSize: titleFontSize.clamp(18.0, 32.0), // Ensure it doesn't go below 18
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.grey[800],
+                                      height: 1.1,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              widget.chatHistories.isEmpty
-                                  ? 'No conversations yet'
-                                  : '${widget.chatHistories.length} conversation${widget.chatHistories.length == 1 ? '' : 's'}',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[600],
-                                fontWeight: FontWeight.w400,
-                                height: 1.3,
-                              ),
-                            ),
-                          ],
+                              // Only show subtitle when not too collapsed
+                              if (collapseProgress < 0.8) ...[
+                                SizedBox(height: 8 * (1 - collapseProgress)), // Dynamic spacing
+                                Opacity(
+                                  opacity: (1 - collapseProgress).clamp(0.0, 1.0),
+                                  child: Text(
+                                    widget.chatHistories.isEmpty
+                                        ? 'No conversations yet'
+                                        : '${widget.chatHistories.length} conversation${widget.chatHistories.length == 1 ? '' : 's'}',
+                                    style: TextStyle(
+                                      fontSize: subtitleFontSize.clamp(14.0, 16.0),
+                                      color: Colors.grey[600],
+                                      fontWeight: FontWeight.w400,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ),
           SliverPadding(
