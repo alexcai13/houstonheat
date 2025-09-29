@@ -5,6 +5,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:csv/csv.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest_all.dart' as tzdata;
+import 'navigation.dart';
 
 // -------------------- MODEL --------------------
 class OpenCenter {
@@ -79,6 +80,9 @@ class CoolingCentersService {
     final addrIdx = header.indexOf('Address');
     final dayIdx = header.indexOf(todayName);
 
+    final latIdx = header.indexOf('Lat');
+    final lonIdx = header.indexOf('Lon');
+
     final open = <OpenCenter>[];
     for (var i = 1; i < rows.length; i++) {
       final row = rows[i];
@@ -87,7 +91,14 @@ class CoolingCentersService {
           (addrIdx >= 0 && row.length > addrIdx) ? row[addrIdx].toString().trim() : '';
       final window =
           (row.length > dayIdx) ? row[dayIdx].toString().trim() : '';
-
+      double? lat;
+      double? lon;
+      if (latIdx >= 0 && row.length > latIdx) {
+      lat = double.tryParse(row[latIdx].toString().trim());
+      }
+      if (lonIdx >= 0 && row.length > lonIdx) {
+      lon = double.tryParse(row[lonIdx].toString().trim());
+      }
       if (name.isEmpty || window.isEmpty || !window.contains('-')) continue;
 
       final anchor =
@@ -95,7 +106,7 @@ class CoolingCentersService {
       try {
         final (start, end) = _parseRange(window, anchor);
         if (start.isBefore(nowCt) && nowCt.isBefore(end)) {
-          open.add(OpenCenter(name: name, address: address, window: window));
+          open.add(OpenCenter(name: name, address: address, window: window, lat: lat, lon: lon));
         }
       } catch (_) {
         continue;
@@ -172,7 +183,6 @@ class _AnimatedCenterCardState extends State<AnimatedCenterCard>
       curve: Curves.easeOutCubic,
     ));
 
-    // Stagger animations based on index
     Future.delayed(Duration(milliseconds: widget.index * 100), () {
       if (mounted) _controller.forward();
     });
@@ -182,6 +192,52 @@ class _AnimatedCenterCardState extends State<AnimatedCenterCard>
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  // Add method to handle navigation
+  Future<void> _navigateToCenter() async {
+    try {
+      // Get current location for navigation
+      Position? currentLocation;
+      try {
+        currentLocation = await _getCurrentLocation();
+      } catch (e) {
+        print('Could not get current location: $e');
+      }
+
+      // Create center data map for navigation
+      final centerData = {
+        'name': widget.center.name,
+        'address': widget.center.address,
+        'lat': widget.center.lat,
+        'lon': widget.center.lon,
+        'window': widget.center.window,
+      };
+
+      // Navigate to navigation page
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => NavigationPage(
+              center: centerData,
+              userLocation: currentLocation,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      // Show error if navigation fails
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to start navigation: $e'),
+            backgroundColor: Colors.red[600],
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -198,123 +254,139 @@ class _AnimatedCenterCardState extends State<AnimatedCenterCard>
               elevation: 8,
               shadowColor: Colors.black.withOpacity(0.15),
               borderRadius: BorderRadius.circular(20),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  gradient: LinearGradient(
-                    colors: [Colors.white, Colors.grey[50]!],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+              child: InkWell( // Added InkWell for tap functionality
+                onTap: _navigateToCenter, // Added tap handler
+                borderRadius: BorderRadius.circular(20), // Match container border radius
+                splashColor: Colors.blue.withOpacity(0.1), // Add splash effect
+                highlightColor: Colors.blue.withOpacity(0.05), // Add highlight effect
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(
+                      colors: [Colors.white, Colors.grey[50]!],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                   ),
-                ),
-                child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Row(
-                    children: [
-                      Hero(
-                        tag: 'cooling_icon_${widget.index}',
-                        child: Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            gradient: LinearGradient(
-                              colors: [Colors.blue[400]!, Colors.cyan[300]!],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.blue.withOpacity(0.3),
-                                blurRadius: 12,
-                                offset: Offset(0, 4),
+                  child: Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Row(
+                      children: [
+                        Hero(
+                          tag: 'cooling_icon_${widget.index}',
+                          child: Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              gradient: LinearGradient(
+                                colors: [Colors.blue[400]!, Colors.cyan[300]!],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
                               ),
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.ac_unit_rounded,
-                            color: Colors.white,
-                            size: 28,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.blue.withOpacity(0.3),
+                                  blurRadius: 12,
+                                  offset: Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              Icons.ac_unit_rounded,
+                              color: Colors.white,
+                              size: 28,
+                            ),
                           ),
                         ),
-                      ),
-                      SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.center.name,
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey[800],
-                                height: 1.2,
-                              ),
-                            ),
-                            SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.location_on_rounded,
-                                  size: 16,
-                                  color: Colors.grey[600],
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.center.name,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[800],
+                                  height: 1.2,
                                 ),
-                                SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    widget.center.address,
+                              ),
+                              SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.location_on_rounded,
+                                    size: 16,
+                                    color: Colors.grey[600],
+                                  ),
+                                  SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      widget.center.address,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey[600],
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.access_time_rounded,
+                                    size: 16,
+                                    color: Colors.green[600],
+                                  ),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    widget.center.window,
                                     style: TextStyle(
                                       fontSize: 14,
-                                      color: Colors.grey[600],
-                                      height: 1.3,
+                                      color: Colors.green[600],
+                                      fontWeight: FontWeight.w500,
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 6),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.access_time_rounded,
-                                  size: 16,
-                                  color: Colors.green[600],
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  widget.center.window,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.green[600],
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (widget.center.distance != null && widget.center.distance != double.infinity)
-                              Padding(
-                                padding: EdgeInsets.only(top: 6),
-                                child: Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.orange.withValues(alpha: 0.1), // Fixed withOpacity
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    '${widget.center.distance!.toStringAsFixed(1)} mi',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.orange[700],
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
+                                ],
                               ),
-                          ],
+                              if (widget.center.distance != null && widget.center.distance != double.infinity) ...[
+                                SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        '${widget.center.distance!.toStringAsFixed(1)} mi',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.orange[700],
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                    Spacer(),
+                                    // Add visual indicator that card is clickable
+                                    Icon(
+                                      Icons.navigation,
+                                      size: 20,
+                                      color: Colors.blue[600],
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
