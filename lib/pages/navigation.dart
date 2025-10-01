@@ -26,15 +26,16 @@ class _NavigationPageState extends State<NavigationPage>
   
   // Navigation states
   NavigationMode _currentMode = NavigationMode.preview;
-  bool _isInitializing = true;
   String? _errorMessage;
   Position? _currentLocation;
   String? _instruction = 'Ready to navigate';
   double? _distanceRemaining;
   double? _durationRemaining;
   String? _nextManeuver;
-  double? _estimatedDistance;
-  String? _estimatedDuration;
+  
+  // Route information
+  double? _routeDistance;
+  double? _routeDuration;
 
   // Animation controllers
   late AnimationController _slideController;
@@ -73,34 +74,99 @@ class _NavigationPageState extends State<NavigationPage>
       curve: Curves.easeOut,
     ));
     
-    _initializeNavigation();
+    // Show preview immediately
+    _showPreviewImmediately();
   }
 
-  Future<void> _initializeNavigation() async {
+  void _showPreviewImmediately() {
+    // Calculate estimates and setup map for cooling center location
+    _calculateStraightLineDistance();
+    _setupMapOptionsForCoolingCenter();
+    
+    setState(() {
+      _currentMode = NavigationMode.preview;
+    });
+
+    // Start animations
+    _fadeController.forward();
+    _slideController.forward();
+  }
+
+  void _setupMapOptionsForCoolingCenter() {
+    // Set up map options to show the cooling center location
+    double? destLat = widget.center['lat']?.toDouble();
+    double? destLon = widget.center['lon']?.toDouble();
+    
+    if (destLat != null && destLon != null) {
+      _options = MapBoxOptions(
+        initialLatitude: destLat, // Focus on cooling center
+        initialLongitude: destLon, // Focus on cooling center
+        zoom: 15.0, // Good zoom to see the location clearly
+        tilt: 0.0,
+        bearing: 0.0,
+        enableRefresh: true,
+        alternatives: false,
+        voiceInstructionsEnabled: false,
+        bannerInstructionsEnabled: false,
+        allowsUTurnAtWayPoints: false,
+        mode: MapBoxNavigationMode.driving,
+        units: VoiceUnits.imperial,
+        simulateRoute: false,
+        animateBuildRoute: false, // No auto route building
+        longPressDestinationEnabled: false,
+        language: "en",
+      );
+    }
+  }
+
+  void _calculateStraightLineDistance() {
     try {
-      setState(() {
-        _isInitializing = true;
-        _errorMessage = null;
-      });
+      double? destLat = widget.center['lat']?.toDouble();
+      double? destLon = widget.center['lon']?.toDouble();
 
-      // Request permissions
-      await _requestPermissions();
+      if (destLat != null && destLon != null && _currentLocation != null) {
+        final double distance = Geolocator.distanceBetween(
+          _currentLocation!.latitude,
+          _currentLocation!.longitude,
+          destLat,
+          destLon,
+        );
 
-      // Get current location if not provided
+        setState(() {
+          _routeDistance = distance * 1.3; // Add 30% for realistic driving distance
+          _routeDuration = (distance * 1.3) / 11.18; // Estimate based on 25 mph average
+        });
+      }
+    } catch (e) {
+      developer.log('Estimate calculation error: $e');
+    }
+  }
+
+  Future<void> _startNavigation() async {
+    try {
+      // Initialize navigation if not ready
+      if (_directions == null) {
+        await _initializeNavigation();
+      }
+
+      double? destLat = widget.center['lat']?.toDouble();
+      double? destLon = widget.center['lon']?.toDouble();
+
+      if (destLat == null || destLon == null) {
+        throw Exception('Invalid destination coordinates');
+      }
+
+      // Get current location for navigation
       if (_currentLocation == null) {
         _currentLocation = await _getCurrentLocation();
       }
 
-      // Initialize MapBox Navigation
-      _directions = MapBoxNavigation.instance;
-      _directions!.registerRouteEventListener(_onRouteEvent);
-
-      // Configure navigation options
+      // Update options for navigation mode
       _options = MapBoxOptions(
         initialLatitude: _currentLocation!.latitude,
         initialLongitude: _currentLocation!.longitude,
-        zoom: 14.0,
-        tilt: 0.0,
+        zoom: 18.0,
+        tilt: 60.0,
         bearing: 0.0,
         enableRefresh: true,
         alternatives: false,
@@ -115,78 +181,6 @@ class _NavigationPageState extends State<NavigationPage>
         language: "en",
       );
 
-      // Calculate route info for preview
-      await _calculateRouteInfo();
-
-      setState(() {
-        _isInitializing = false;
-        _currentMode = NavigationMode.preview;
-      });
-
-      // Start animations
-      _fadeController.forward();
-      _slideController.forward();
-
-    } catch (e) {
-      developer.log('Navigation initialization error: $e');
-      setState(() {
-        _errorMessage = 'Failed to initialize: ${e.toString()}';
-        _isInitializing = false;
-      });
-    }
-  }
-
-  Future<void> _calculateRouteInfo() async {
-    try {
-      double? destLat = widget.center['lat']?.toDouble();
-      double? destLon = widget.center['lon']?.toDouble();
-
-      if (destLat == null || destLon == null || _currentLocation == null) {
-        return;
-      }
-
-      // Calculate straight-line distance for estimate
-      final double distance = Geolocator.distanceBetween(
-        _currentLocation!.latitude,
-        _currentLocation!.longitude,
-        destLat,
-        destLon,
-      );
-
-      setState(() {
-        _estimatedDistance = distance;
-        // Estimate time based on average city driving (25 mph = 11.18 m/s)
-        _estimatedDuration = _formatDuration((distance / 11.18).round());
-      });
-
-    } catch (e) {
-      developer.log('Route calculation error: $e');
-    }
-  }
-
-  Future<void> _startNavigation() async {
-    if (_directions == null || _options == null || _currentLocation == null) {
-      return;
-    }
-
-    try {
-      setState(() {
-        _currentMode = NavigationMode.navigating;
-        _instruction = 'Starting navigation...';
-      });
-
-      // Animate transition to navigation mode
-      await _slideController.reverse();
-      await Future.delayed(const Duration(milliseconds: 200));
-      await _slideController.forward();
-
-      double? destLat = widget.center['lat']?.toDouble();
-      double? destLon = widget.center['lon']?.toDouble();
-
-      if (destLat == null || destLon == null) {
-        throw Exception('Invalid destination coordinates');
-      }
-
       final List<WayPoint> wayPoints = [
         WayPoint(
           name: "Start",
@@ -200,10 +194,16 @@ class _NavigationPageState extends State<NavigationPage>
         ),
       ];
 
+      // Start navigation first, then switch mode only when it's actually started
       await _directions!.startNavigation(
         wayPoints: wayPoints,
         options: _options!,
       );
+
+      // Only switch to navigation mode after MapBox navigation has started
+      setState(() {
+        _currentMode = NavigationMode.navigating;
+      });
 
     } catch (e) {
       developer.log('Start navigation error: $e');
@@ -214,6 +214,12 @@ class _NavigationPageState extends State<NavigationPage>
     }
   }
 
+  Future<void> _initializeNavigation() async {
+    await _requestPermissions();
+    _directions = MapBoxNavigation.instance;
+    _directions!.registerRouteEventListener(_onRouteEvent);
+  }
+
   Future<void> _stopNavigation() async {
     try {
       if (_directions != null) {
@@ -222,16 +228,14 @@ class _NavigationPageState extends State<NavigationPage>
       
       setState(() {
         _currentMode = NavigationMode.preview;
-        _instruction = 'Navigation stopped';
+        _instruction = 'Ready to navigate';
         _distanceRemaining = null;
         _durationRemaining = null;
         _nextManeuver = null;
       });
 
-      // Animate back to preview
-      await _slideController.reverse();
-      await Future.delayed(const Duration(milliseconds: 200));
-      await _slideController.forward();
+      // Reset to cooling center view
+      _setupMapOptionsForCoolingCenter();
 
     } catch (e) {
       developer.log('Stop navigation error: $e');
@@ -266,7 +270,7 @@ class _NavigationPageState extends State<NavigationPage>
 
   void _onRouteEvent(dynamic event) {
     try {
-      if (event != null && mounted) {
+      if (event != null && mounted && _currentMode == NavigationMode.navigating) {
         String? eventType = event['eventType'] as String?;
         
         switch (eventType) {
@@ -292,7 +296,7 @@ class _NavigationPageState extends State<NavigationPage>
   }
 
   void _handleNavigationProgress(dynamic event) {
-    if (!mounted) return;
+    if (!mounted || _currentMode != NavigationMode.navigating) return;
     
     setState(() {
       if (event['instruction'] != null) {
@@ -303,6 +307,9 @@ class _NavigationPageState extends State<NavigationPage>
       }
       if (event['duration'] != null) {
         _durationRemaining = (event['duration'] as num).toDouble();
+      }
+      if (event['maneuver'] != null) {
+        _nextManeuver = event['maneuver'];
       }
     });
   }
@@ -323,8 +330,10 @@ class _NavigationPageState extends State<NavigationPage>
     }
   }
 
-  String _formatDuration(int seconds) {
-    final int minutes = (seconds / 60).round();
+  String _formatDuration(double? seconds) {
+    if (seconds == null) return '';
+    final int totalSeconds = seconds.round();
+    final int minutes = (totalSeconds / 60).round();
     if (minutes >= 60) {
       final int hours = minutes ~/ 60;
       final int remainingMinutes = minutes % 60;
@@ -356,135 +365,26 @@ class _NavigationPageState extends State<NavigationPage>
   Widget _buildPreviewScreen() {
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.blue[600],
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          widget.center['name'] ?? 'Cooling Center',
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back),
+        ),
+      ),
       body: Column(
         children: [
-          // Header
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 60, 16, 20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.blue[600]!, Colors.blue[500]!],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.white.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.center['name'] ?? 'Cooling Center',
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          if (widget.center['address'] != null) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              widget.center['address'],
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.white.withValues(alpha: 0.9),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                
-                // Route info
-                if (_estimatedDistance != null && _estimatedDuration != null) ...[
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            children: [
-                              const Icon(Icons.access_time, color: Colors.white, size: 20),
-                              const SizedBox(height: 4),
-                              Text(
-                                _estimatedDuration!,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              Text(
-                                'Estimated',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white.withValues(alpha: 0.8),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            children: [
-                              const Icon(Icons.straighten, color: Colors.white, size: 20),
-                              const SizedBox(height: 4),
-                              Text(
-                                _formatDistance(_estimatedDistance),
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              Text(
-                                'Distance',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white.withValues(alpha: 0.8),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ],
-            ),
-          ),
-          
-          // Map Preview
+          // Map Preview - takes most space (removed route info header)
           Expanded(
-            flex: 3,
             child: Container(
               margin: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -499,136 +399,103 @@ class _NavigationPageState extends State<NavigationPage>
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: Stack(
-                  children: [
-                    // Embedded map preview
-                    if (_options != null)
-                      MapBoxNavigationView(
+                child: _options != null
+                    ? MapBoxNavigationView(
                         options: _options!,
                         onRouteEvent: _onRouteEvent,
                         onCreated: (MapBoxNavigationViewController controller) {
                           _controller = controller;
+                          _moveCameraToCoolingCenter();
                         },
-                      ),
-                    
-                    // Overlay to prevent interaction
-                    Container(
-                      color: Colors.transparent,
-                      child: const Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.map,
-                              size: 40,
-                              color: Colors.white,
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'Route Preview',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black54,
-                                    blurRadius: 4,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                      )
+                    : Container(
+                        color: Colors.grey[200],
+                        child: const Center(
+                          child: CircularProgressIndicator(),
                         ),
                       ),
-                    ),
-                  ],
-                ),
               ),
             ),
           ),
           
-          // Action buttons
-          Expanded(
-            flex: 1,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  // Start Navigation Button
-                  SlideTransition(
-                    position: _slideAnimation,
-                    child: FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: _startNavigation,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue[600],
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(28),
-                            ),
-                            elevation: 4,
-                          ),
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.navigation, size: 24),
-                              SizedBox(width: 12),
-                              Text(
-                                'Start Navigation',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 12),
-                  
-                  // Call button (if phone number available)
-                  if (widget.center['phone'] != null)
-                    SizedBox(
+          // Bottom action buttons (unchanged)
+          Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Start Navigation Button
+                SlideTransition(
+                  position: _slideAnimation,
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: SizedBox(
                       width: double.infinity,
-                      height: 48,
-                      child: OutlinedButton(
-                        onPressed: () {
-                          // Add phone call functionality
-                        },
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.blue[600],
-                          side: BorderSide(color: Colors.blue[600]!),
+                      height: 54,
+                      child: ElevatedButton(
+                        onPressed: _startNavigation,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue[600],
+                          foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(24),
+                            borderRadius: BorderRadius.circular(27),
                           ),
+                          elevation: 4,
                         ),
-                        child: Row(
+                        child: const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.phone, size: 20, color: Colors.blue[600]),
-                            const SizedBox(width: 8),
+                            Icon(Icons.navigation, size: 22),
+                            SizedBox(width: 10),
                             Text(
-                              'Call Center',
+                              'Start Navigation',
                               style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.blue[600],
+                                fontSize: 17,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
-                ],
-              ),
+                  ),
+                ),
+                
+                const SizedBox(height: 12),
+                
+                // Call button (if phone number available)
+                if (widget.center['phone'] != null)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 46,
+                    child: OutlinedButton(
+                      onPressed: () {
+                        // Add phone call functionality
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.blue[600],
+                        side: BorderSide(color: Colors.blue[600]!),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(23),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.phone, size: 18, color: Colors.blue[600]),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Call Center',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.blue[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ],
@@ -651,109 +518,60 @@ class _NavigationPageState extends State<NavigationPage>
           
           // Top instruction bar
           SafeArea(
-            child: SlideTransition(
-              position: _slideAnimation,
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: Container(
-                  margin: const EdgeInsets.all(16),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        onPressed: _stopNavigation,
-                        icon: const Icon(Icons.arrow_back),
-                        style: IconButton.styleFrom(
-                          backgroundColor: Colors.grey[100],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _instruction ?? 'Navigating...',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            if (_distanceRemaining != null && _durationRemaining != null) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                '${_formatDistance(_distanceRemaining)} • ${_formatDuration(_durationRemaining!.round())}',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      Icon(
-                        _getManeuverIcon(_nextManeuver),
-                        color: Colors.blue[600],
-                        size: 24,
-                      ),
-                    ],
-                  ),
-                ),
+                ],
               ),
-            ),
-          ),
-          
-          // Bottom stop button
-          Positioned(
-            left: 16,
-            right: 16,
-            bottom: 32,
-            child: SafeArea(
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, 1),
-                  end: Offset.zero,
-                ).animate(_slideController),
-                child: Container(
-                  height: 56,
-                  child: ElevatedButton(
+              child: Row(
+                children: [
+                  IconButton(
                     onPressed: _stopNavigation,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red[600],
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(28),
-                      ),
-                      elevation: 8,
+                    icon: const Icon(Icons.close),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.grey[100],
                     ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.stop, size: 24),
-                        SizedBox(width: 12),
                         Text(
-                          'Stop Navigation',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
+                          _instruction ?? 'Navigating...',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
+                        if (_distanceRemaining != null && _durationRemaining != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            '${_formatDistance(_distanceRemaining)} • ${_formatDuration(_durationRemaining)}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
-                ),
+                  Icon(
+                    _getManeuverIcon(_nextManeuver),
+                    color: Colors.blue[600],
+                    size: 28,
+                  ),
+                ],
               ),
             ),
           ),
@@ -764,30 +582,7 @@ class _NavigationPageState extends State<NavigationPage>
 
   @override
   Widget build(BuildContext context) {
-    if (_isInitializing) {
-      return Scaffold(
-        backgroundColor: Colors.white,
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 24),
-              Text(
-                'Loading Route...',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey[700],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    if (_errorMessage != null) {
+    if (_errorMessage != null && _routeDistance == null) {
       return Scaffold(
         backgroundColor: Colors.white,
         body: Center(
@@ -821,7 +616,12 @@ class _NavigationPageState extends State<NavigationPage>
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: _initializeNavigation,
+                  onPressed: () {
+                    setState(() {
+                      _errorMessage = null;
+                    });
+                    _showPreviewImmediately();
+                  },
                   child: const Text('Retry'),
                 ),
               ],
@@ -846,6 +646,35 @@ class _NavigationPageState extends State<NavigationPage>
     _fadeController.dispose();
     _directions?.finishNavigation();
     super.dispose();
+  }
+
+  void _moveCameraToCoolingCenter() {
+    double? destLat = widget.center['lat']?.toDouble();
+    double? destLon = widget.center['lon']?.toDouble();
+    
+    if (destLat != null && destLon != null && _controller != null && _currentLocation != null) {
+      // Use a shorter delay and immediately build the route to show the preview
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (_controller != null && mounted && _currentMode == NavigationMode.preview) {
+          try {
+            _controller!.buildRoute(wayPoints: [
+              WayPoint(
+                name: "Your Location",
+                latitude: _currentLocation!.latitude,
+                longitude: _currentLocation!.longitude,
+              ),
+              WayPoint(
+                name: widget.center['name'] ?? 'Cooling Center',
+                latitude: destLat,
+                longitude: destLon,
+              ),
+            ]);
+          } catch (e) {
+            developer.log('Camera move error: $e');
+          }
+        }
+      });
+    }
   }
 }
 

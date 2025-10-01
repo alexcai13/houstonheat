@@ -462,10 +462,10 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
                                 Container(
                                   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                   decoration: BoxDecoration(
-                                    color: tempToColor(feelsLikeF ?? 0).withValues(alpha: 0.2),
+                                    color: tempToColor(feelsLikeF ?? 0).withValues(alpha: 0.6),
                                     borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: tempToColor(feelsLikeF ?? 0).withValues(alpha: 0.6),
+                                    border: Border.all( 
+                                      color: tempToColor(feelsLikeF ?? 0).withValues(alpha: 1),
                                       width: 1,
                                     ),
                                   ),
@@ -474,7 +474,7 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
                                     style: textStyle.copyWith(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
-                                      color: tempToColor(feelsLikeF ?? 0).withValues(alpha: 0.9),
+                                      color: Colors.black,
                                     ),
                                   ),
                                 ),

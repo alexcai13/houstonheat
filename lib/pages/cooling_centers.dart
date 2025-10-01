@@ -592,66 +592,49 @@ class _CoolingCentersPageState extends State<CoolingCentersPage>
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 200,
+            expandedHeight: 120,
             floating: false,
             pinned: true,
             elevation: 0,
             backgroundColor: Colors.white,
-            iconTheme: IconThemeData(color: Colors.black),
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.blue[50]!, Colors.white],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
+            automaticallyImplyLeading: false,
+            flexibleSpace: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.blue[50]!, Colors.white],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: [0.0, 1.0], // Ensure smooth transition
                 ),
-                child: SafeArea(
-                  child: SlideTransition(
-                    position: _headerSlideAnimation,
-                    child: FadeTransition(
-                      opacity: _headerFadeAnimation,
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Hero(
-                              tag: 'cooling_title',
-                              child: Material(
-                                color: Colors.transparent,
-                                child: Text(
-                                  'Open Cooling Centers',
-                                  style: TextStyle(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey[800],
-                                    height: 1.1,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'Find all open cooling centers near you',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[600],
-                                fontWeight: FontWeight.w400,
-                                height: 1.3,
-                              ),
-                            ),
-                          ],
+              ),
+              child: SafeArea(
+                child: FlexibleSpaceBar(
+                  centerTitle: true,
+                  titlePadding: EdgeInsets.only(
+                    left: 16,
+                    right: 16,
+                    bottom: 16,
+                  ),
+                  title: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isCollapsed = constraints.maxHeight <= 80;
+                      return Text(
+                        'Open Cooling Centers',
+                        style: TextStyle(
+                          fontSize: isCollapsed ? 18 : 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[800],
                         ),
-                      ),
-                    ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      );
+                    },
                   ),
                 ),
               ),
             ),
           ),
+          
           SliverToBoxAdapter(
             child: FutureBuilder<List<OpenCenter>>(
               future: _futureOpenCenters,
