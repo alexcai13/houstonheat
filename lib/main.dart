@@ -4,6 +4,7 @@ import 'pages/homepage.dart';
 import 'pages/map.dart';
 import 'pages/chat.dart';
 import 'pages/chat_selector.dart'; 
+import 'pages/resource.dart'; 
 import 'dart:math' as Math;
 
 void main() {
@@ -16,7 +17,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Weather & Cooling Centers',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: HomePage(),
+      home: HomePage(), // <- set resources page as start
     );
   }
 }
@@ -31,10 +32,6 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   bool _showChatSelector = false; // <-- Add this
   List<Map<String, dynamic>> _chatHistories = [
-    {
-      'title': 'New Chat',
-      'messages': <Map<String, String>>[],
-    }
   ];
   int _currentChatIndex = 0;
   Map<String, dynamic>? _currentWeatherData;
@@ -48,7 +45,7 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _chatHistories = List<Map<String, dynamic>>.from(chats); // Create a new list
       _currentChatIndex = chatIndex;
-      _selectedIndex = 3;
+      _selectedIndex = 4;
       _showChatSelector = false;
     });
   }
@@ -59,23 +56,11 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  void _onSwitchChat(int newIndex) {
-    print('Switching to chat $newIndex of ${_chatHistories.length} chats'); // Debug print
-
-    // Ensure index is valid
-    if (newIndex >= _chatHistories.length) {
-      newIndex = _chatHistories.length - 1;
-    }
-
-    setState(() {
-      _currentChatIndex = newIndex;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final List<Widget> _pages = [
       CoolingCentersPage(),
+      MapPage(),
       WeatherScreen(
         lat: 29.7604,
         lon: -95.3698,
@@ -86,7 +71,7 @@ class _HomePageState extends State<HomePage> {
           });
         },
       ),
-      MapPage(),
+      ResourcesPage(),
       ChatPage(
         weatherData: _currentWeatherData,
         chatHistories: _chatHistories,
@@ -101,7 +86,7 @@ class _HomePageState extends State<HomePage> {
     ];
 
     return Scaffold(
-      body: (_selectedIndex == 3 && _showChatSelector)
+      body: (_selectedIndex == 4 && _showChatSelector)
           ? ChatSelectorPage(
               chatHistories: _chatHistories,
               weatherData: _currentWeatherData,
@@ -113,8 +98,8 @@ class _HomePageState extends State<HomePage> {
         currentIndex: _selectedIndex,
         onTap: (index) {
           setState(() {
-            if (index == 3) {
-              if (_selectedIndex != 3) {
+            if (index == 4) {
+              if (_selectedIndex != 4) {
                 // First time tapping chat or coming from another tab
                 _showChatSelector = true;
               } else {
@@ -136,12 +121,16 @@ class _HomePageState extends State<HomePage> {
             label: "Centers",
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.map),
+            label: "Map",
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.cloud),
             label: "Weather",
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.map),
-            label: "Map",
+            icon: Icon(Icons.book),
+            label: "Resources",
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.chat),

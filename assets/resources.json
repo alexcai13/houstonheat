@@ -1,0 +1,127 @@
+[
+  {
+    "category": "Emergency Resources",
+    "resources": [
+      {
+        "name": "911 (Police, Fire, EMS)",
+        "description": "Call 9-1-1 for any life-threatening emergency, including heat stroke, fires, or medical distress.",
+        "link": "https://www.houstontx.gov/hec/"
+      },
+      {
+        "name": "211 Texas / United Way HELPLINE",
+        "description": "Dial 2-1-1 to find nearby cooling centers, shelters, and disaster assistance programs.",
+        "link": "https://www.211texas.org/"
+      },
+      {
+        "name": "Houston Office of Emergency Management (OEM)",
+        "description": "Provides real-time alerts, emergency plans, and updates during extreme heat events.",
+        "link": "https://houstonoem.org/extreme-heat/"
+      },
+      {
+        "name": "ReadyHarris",
+        "description": "Harris County’s official preparedness site offering weather alerts, safety tips, and emergency updates.",
+        "link": "https://www.readyharris.org/"
+      }
+    ]
+  },
+  {
+    "category": "Health Resources",
+    "resources": [
+      {
+        "name": "Houston Health Department — Heat Illness Dashboard",
+        "description": "Tracks emergency room visits and health trends related to extreme heat across Houston.",
+        "link": "https://www.houstonhealth.org/data-dashboards"
+      },
+      {
+        "name": "Harris County Public Health — Climate & Health Program",
+        "description": "Provides data, maps, and safety guidance on heat exposure and public health risks.",
+        "link": "https://publichealth.harriscountytx.gov/Divisions-Offices/Offices/Office-of-Epidemiology-Surveillance-Emerging-Diseases/Non-Communicable-Diseases/Climate-Program/Extreme-Heat-Health"
+      },
+      {
+        "name": "Houston Emergency Management — Heat Safety Tips",
+        "description": "Offers practical tips for recognizing and preventing heat-related illnesses.",
+        "link": "https://houstonemergency.org/extreme-heat-tips-to-stay-cool/"
+      }
+    ]
+  },
+  {
+    "category": "Education",
+    "resources": [
+      {
+        "name": "ReadyHarris — Summer Weather Preparedness",
+        "description": "Explains how heat advisories, warnings, and alerts work and what actions to take.",
+        "link": "https://www.readyharris.org/prepare-for-summer-weather"
+      },
+      {
+        "name": "University of Houston — Extreme Heat Safety",
+        "description": "Provides guidance for students and residents on staying safe before and during extreme heat events.",
+        "link": "https://www.uh.edu/emergency-management/be-prepared/extreme-heat/index.php"
+      },
+      {
+        "name": "Coalition for the Homeless — Preparing for Extreme Heat",
+        "description": "Details how Houston opens cooling centers and assists those without access to air conditioning.",
+        "link": "https://www.cfthhouston.org/preparing-for-extreme-heat-2025"
+      }
+    ]
+  },
+  {
+    "category": "Utility Assistance",
+    "resources": [
+      {
+        "name": "BakerRipley Utility Assistance Program",
+        "description": "Helps eligible households pay electricity, gas, or propane bills during financial hardship.",
+        "link": "https://bakerripley.org/programs-and-services/utility-assistance/"
+      },
+      {
+        "name": "Catholic Charities — Financial & Utility Aid",
+        "description": "Provides rent and utility assistance for families facing financial emergencies.",
+        "link": "https://catholiccharities.org/financial-stability/"
+      },
+      {
+        "name": "Memorial Assistance Ministries (MAM)",
+        "description": "Offers emergency financial help to prevent utility shut-offs and housing instability.",
+        "link": "https://www.mamhouston.org/"
+      }
+    ]
+  },
+  {
+    "category": "Volunteer Opportunities",
+    "resources": [
+      {
+        "name": "Volunteer Houston",
+        "description": "Search for community projects like water distribution, cooling center staffing, and outreach events.",
+        "link": "https://www.volunteerhou.org/"
+      },
+      {
+        "name": "Houston Harris Heat Action Team (H3AT)",
+        "description": "Join volunteer efforts to map heat across Houston and raise awareness about heat risk.",
+        "link": "https://www.h3at.org/get-involved/"
+      },
+      {
+        "name": "United Way of Greater Houston — Disaster Recovery",
+        "description": "Supports volunteer efforts for heat-related and emergency response initiatives.",
+        "link": "https://unitedwayhouston.org/what-we-do/disaster-recovery/"
+      }
+    ]
+  },
+  {
+    "category": "Research & Data",
+    "resources": [
+      {
+        "name": "Houston Health Department — Heat ER Dashboard",
+        "description": "Visualizes emergency room visits related to extreme heat by neighborhood and time period.",
+        "link": "https://www.houstonhealth.org/data-dashboards"
+      },
+      {
+        "name": "H3AT Mapping Campaign (HARC)",
+        "description": "Uses sensors and volunteers to map temperature differences across Houston neighborhoods.",
+        "link": "https://harcresearch.org/research/houston-harris-heat-action-team-h3at-mapping-campaign/"
+      },
+      {
+        "name": "Harris County Public Health — Heat Vulnerability Assessment",
+        "description": "Identifies neighborhoods most at risk of heat exposure based on social and environmental factors.",
+        "link": "https://publichealth.harriscountytx.gov/Divisions-Offices/Offices/Office-of-Epidemiology-Surveillance-Emerging-Diseases/Non-Communicable-Diseases/Climate-Program"
+      }
+    ]
+  }
+]

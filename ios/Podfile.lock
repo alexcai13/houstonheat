@@ -1,6 +1,6 @@
 PODS:
   - Flutter (1.0.0)
-  - flutter_mapbox_navigation (0.1.9):
+  - flutter_mapbox_navigation (0.2.2):
     - Flutter
     - MapboxCoreNavigation (~> 2.11)
     - MapboxNavigation (~> 2.11)
@@ -51,6 +51,8 @@ PODS:
   - Polyline (5.1.0)
   - Solar-dev (3.0.1)
   - Turf (2.8.0)
+  - url_launcher_ios (0.0.1):
+    - Flutter
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
@@ -60,6 +62,7 @@ DEPENDENCIES:
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
+  - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
 
 SPEC REPOS:
   trunk:
@@ -93,10 +96,12 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
   permission_handler_apple:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
+  url_launcher_ios:
+    :path: ".symlinks/plugins/url_launcher_ios/ios"
 
 SPEC CHECKSUMS:
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
-  flutter_mapbox_navigation: b1597f80fcc12d1a32fb647e7a789b2b4b620d80
+  flutter_mapbox_navigation: 95559ba53480e183bb3b38ef7b9e0abd7c0988ba
   geolocator_apple: ab36aa0e8b7d7a2d7639b3b4e48308394e8cef5e
   Google-Maps-iOS-Utils: 66d6de12be1ce6d3742a54661e7a79cb317a9321
   google_maps_flutter_ios: 0291eb2aa252298a769b04d075e4a9d747ff7264
@@ -116,6 +121,7 @@ SPEC CHECKSUMS:
   Polyline: 2a1f29f87f8d9b7de868940f4f76deb8c678a5b1
   Solar-dev: 4612dc9878b9fed2667d23b327f1d4e54e16e8d0
   Turf: aa2ede4298009639d10db36aba1a7ebaad072a5e
+  url_launcher_ios: 694010445543906933d732453a59da0a173ae33d
 
 PODFILE CHECKSUM: e30f02f9d1c72c47bb6344a0a748c9d268180865
 

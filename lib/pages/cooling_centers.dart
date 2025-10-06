@@ -252,13 +252,13 @@ class _AnimatedCenterCardState extends State<AnimatedCenterCard>
             margin: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Material(
               elevation: 8,
-              shadowColor: Colors.black.withOpacity(0.15),
+              shadowColor: Colors.black.withValues(alpha: 0.15), // Fixed: Use withValues
               borderRadius: BorderRadius.circular(20),
-              child: InkWell( // Added InkWell for tap functionality
-                onTap: _navigateToCenter, // Added tap handler
-                borderRadius: BorderRadius.circular(20), // Match container border radius
-                splashColor: Colors.blue.withOpacity(0.1), // Add splash effect
-                highlightColor: Colors.blue.withOpacity(0.05), // Add highlight effect
+              child: InkWell(
+                onTap: _navigateToCenter,
+                borderRadius: BorderRadius.circular(20),
+                splashColor: Colors.blue.withValues(alpha: 0.1), // Fixed: Use withValues
+                highlightColor: Colors.blue.withValues(alpha: 0.05), // Fixed: Use withValues
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
@@ -286,7 +286,7 @@ class _AnimatedCenterCardState extends State<AnimatedCenterCard>
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.blue.withOpacity(0.3),
+                                  color: Colors.blue.withValues(alpha: 0.3), // Fixed: Use withValues
                                   blurRadius: 12,
                                   offset: Offset(0, 4),
                                 ),
@@ -343,45 +343,25 @@ class _AnimatedCenterCardState extends State<AnimatedCenterCard>
                                     color: Colors.green[600],
                                   ),
                                   SizedBox(width: 4),
-                                  Text(
-                                    widget.center.window,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.green[600],
-                                      fontWeight: FontWeight.w500,
+                                  Expanded(
+                                    child: Text(
+                                      widget.center.window,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.green[600],
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
+                                  ),
+                                  // Keep only the navigation icon - REMOVED distance display
+                                  Icon(
+                                    Icons.navigation,
+                                    size: 20,
+                                    color: Colors.blue[600],
                                   ),
                                 ],
                               ),
-                              if (widget.center.distance != null && widget.center.distance != double.infinity) ...[
-                                SizedBox(height: 6),
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: Colors.orange.withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        '${widget.center.distance!.toStringAsFixed(1)} mi',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.orange[700],
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                    Spacer(),
-                                    // Add visual indicator that card is clickable
-                                    Icon(
-                                      Icons.navigation,
-                                      size: 20,
-                                      color: Colors.blue[600],
-                                    ),
-                                  ],
-                                ),
-                              ],
+                              // REMOVED: The entire distance display section
                             ],
                           ),
                         ),
@@ -503,6 +483,11 @@ class _CoolingCentersPageState extends State<CoolingCentersPage>
   late Animation<double> _headerFadeAnimation;
   late Animation<Offset> _headerSlideAnimation;
 
+  // Add search functionality
+  final TextEditingController _searchController = TextEditingController();
+  List<OpenCenter> _allCenters = [];
+  List<OpenCenter> _filteredCenters = [];
+
   double _deg2rad(double deg) => deg * (pi / 180);
 
   double _haversine(double lat1, double lon1, double lat2, double lon2) {
@@ -577,12 +562,260 @@ class _CoolingCentersPageState extends State<CoolingCentersPage>
 
     _futureOpenCenters = _getAllOpenCentersByDistance();
     _headerController.forward();
+
+    // Add search listener
+    _searchController.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
     _headerController.dispose();
+    _searchController.dispose();
     super.dispose();
+  }
+
+  void _onSearchChanged() {
+    final query = _searchController.text.toLowerCase();
+    if (query.isEmpty) {
+      setState(() {
+        _filteredCenters = List.from(_allCenters);
+      });
+    } else {
+      setState(() {
+        _filteredCenters = _allCenters.where((center) {
+          return center.name.toLowerCase().contains(query) ||
+                 center.address.toLowerCase().contains(query);
+        }).toList();
+      });
+    }
+  }
+
+  Widget _buildSearchBar() {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: 'Search centers by name or address...',
+          hintStyle: TextStyle(
+            color: Colors.grey[500],
+            fontSize: 15,
+          ),
+          prefixIcon: Icon(
+            Icons.search,
+            color: Colors.grey[600],
+            size: 22,
+          ),
+          suffixIcon: _searchController.text.isNotEmpty
+              ? IconButton(
+                  icon: Icon(Icons.clear, color: Colors.grey[600], size: 20),
+                  onPressed: () {
+                    _searchController.clear();
+                  },
+                )
+              : null,
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        ),
+        style: TextStyle(
+          fontSize: 15,
+          color: Colors.grey[800],
+        ),
+      ),
+    );
+  }
+
+  // Add method to show help dialog
+  void _showHelpDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            constraints: BoxConstraints(maxWidth: 400),
+            padding: EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                colors: [Colors.white, Colors.blue[50]!],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        gradient: LinearGradient(
+                          colors: [Colors.blue[500]!, Colors.blue[600]!],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.help_outline,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                    SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        'How to Use Cooling Centers',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[800],
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: Icon(Icons.close, color: Colors.grey[600]),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.grey[100],
+                        shape: CircleBorder(),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                SizedBox(height: 24),
+                
+                // Instructions list
+                ..._buildInstructionsList(),
+
+                
+                // Got it button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue[600],
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      elevation: 2,
+                    ),
+                    child: Text(
+                      'Got it!',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  List<Widget> _buildInstructionsList() {
+    final instructions = [
+      {
+        'icon': Icons.visibility,
+        'title': 'View Open Centers',
+        'description': 'Only centers currently open are shown in the list',
+      },
+      {
+        'icon': Icons.touch_app,
+        'title': 'Tap to Navigate',
+        'description': 'Tap any center card to get directions and start navigation',
+      },
+      {
+        'icon': Icons.location_on,
+        'title': 'Distance Shown',
+        'description': 'Centers are sorted by distance from your current location',
+      },
+      {
+        'icon': Icons.access_time,
+        'title': 'Check Hours',
+        'description': 'Hours shown are for today. Centers may have different weekend hours',
+      },
+      {
+        'icon': Icons.info_outline,
+        'title': 'Get Details',
+        'description': 'Tap the info button to see full weekly schedule and contact info',
+      },
+    ];
+
+    return instructions.map((instruction) {
+      return Container(
+        margin: EdgeInsets.only(bottom: 16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center, // Changed from start to center
+          children: [
+            Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blue[100],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                instruction['icon'] as IconData,
+                color: Colors.blue[700],
+                size: 20,
+              ),
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center, // Center the text column
+                children: [
+                  Text(
+                    instruction['title'] as String,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    instruction['description'] as String,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }).toList();
   }
 
   @override
@@ -712,36 +945,96 @@ class _CoolingCentersPageState extends State<CoolingCentersPage>
                     ),
                   );
                 } else {
-                  final centers = snapshot.data!;
+                  // Initialize centers lists when data is loaded
+                  if (_allCenters.isEmpty) {
+                    _allCenters = snapshot.data!;
+                    _filteredCenters = List.from(_allCenters);
+                  }
+                  
+                  final centersToShow = _searchController.text.isEmpty ? snapshot.data! : _filteredCenters;
+                  
                   return Column(
                     children: [
                       SizedBox(height: 16),
-                      if (centers.isNotEmpty)
+                      
+                      // Updated header with help button on the right
+                      if (snapshot.data!.isNotEmpty)
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 24),
                           child: Row(
                             children: [
                               Icon(Icons.near_me, size: 18, color: Colors.blue[600]),
                               SizedBox(width: 8),
-                              Text(
-                                '${centers.length} centers open now',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey[700],
+                              Expanded(
+                                child: Text(
+                                  _searchController.text.isEmpty
+                                      ? '${snapshot.data!.length} centers open now'
+                                      : '${centersToShow.length} centers found',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+                              ),
+                              // Help button moved to the right with no background
+                              GestureDetector(
+                                onTap: _showHelpDialog,
+                                child: Icon(
+                                  Icons.help_outline,
+                                  size: 24, // Made bigger
+                                  color: Colors.blue[600],
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      SizedBox(height: 8),
-                      ...List.generate(
-                        centers.length,
-                        (index) => AnimatedCenterCard(
-                          center: centers[index],
-                          index: index,
+                      
+                      // Clean search bar
+                      _buildSearchBar(),
+                      
+                      // Show filtered centers or no results message
+                      if (centersToShow.isEmpty && _searchController.text.isNotEmpty)
+                        Container(
+                          height: 200,
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.search_off,
+                                  size: 64,
+                                  color: Colors.grey[400],
+                                ),
+                                SizedBox(height: 16),
+                                Text(
+                                  'No centers found',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    color: Colors.grey[600],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Try searching with different keywords',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[500],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      else
+                        ...List.generate(
+                          centersToShow.length,
+                          (index) => AnimatedCenterCard(
+                            center: centersToShow[index],
+                            index: index,
+                          ),
                         ),
-                      ),
                       SizedBox(height: 32),
                     ],
                   );

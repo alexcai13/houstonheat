@@ -364,6 +364,7 @@ class _InteractiveMapState extends State<InteractiveMap> {
   Set<Marker> _markers = {};
   Set<Polyline> _polylines = {};
   bool _isLoadingRoute = true;
+  bool _isStartingNavigation = true; // Add this flag
   String _selectedMode = 'driving';
   List<Map<String, dynamic>> _steps = [];
   String? _duration;
@@ -377,9 +378,20 @@ class _InteractiveMapState extends State<InteractiveMap> {
   }
 
   Future<void> _initializeMap() async {
+    setState(() {
+      _isStartingNavigation = true; // Show starting navigation
+    });
+    
     await _geocodeDestination();
     await _createMarkers();
     await _getDirections();
+    
+    // Add a small delay to ensure everything is loaded
+    await Future.delayed(Duration(milliseconds: 1000));
+    
+    setState(() {
+      _isStartingNavigation = false; // Navigation ready
+    });
   }
 
   // Geocode the destination address to get coordinates
@@ -879,144 +891,280 @@ class _InteractiveMapState extends State<InteractiveMap> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        GoogleMap(
-          onMapCreated: (GoogleMapController controller) {
-            _mapController = controller;
-          },
-          initialCameraPosition: CameraPosition(
-            target: LatLng(widget.userLat, widget.userLon),
-            zoom: 12,
-          ),
-          markers: _markers,
-          polylines: _polylines,
-          myLocationEnabled: true,
-          myLocationButtonEnabled: false,
-          zoomControlsEnabled: false,
-          mapToolbarEnabled: false,
-        ),
-        
-        // Transportation mode selector
-        Positioned(
-          top: 16,
-          left: 16,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: Offset(0, 2),
-                ),  
-              ],
+        // Show map only when navigation is ready
+        if (!_isStartingNavigation)
+          GoogleMap(
+            onMapCreated: (GoogleMapController controller) {
+              _mapController = controller;
+            },
+            initialCameraPosition: CameraPosition(
+              target: LatLng(widget.userLat, widget.userLon),
+              zoom: 12,
             ),
-            child: Row(
-              children: [
-                _buildModeButton('driving', Icons.directions_car),
-                _buildModeButton('walking', Icons.directions_walk),
-                _buildModeButton('transit', Icons.directions_bus),
-                _buildModeButton('bicycling', Icons.directions_bike),
-              ],
-            ),
+            markers: _markers,
+            polylines: _polylines,
+            myLocationEnabled: true,
+            myLocationButtonEnabled: false,
+            zoomControlsEnabled: false,
+            mapToolbarEnabled: false,
           ),
-        ),
         
-        // Zoom controls
-        Positioned(
-          top: 16,
-          right: 16,
-          child: Column(
-            children: [
-              _buildZoomButton(Icons.add, () {
-                _mapController?.animateCamera(CameraUpdate.zoomIn());
-              }),
-              SizedBox(height: 8),
-              _buildZoomButton(Icons.remove, () {
-                _mapController?.animateCamera(CameraUpdate.zoomOut());
-              }),
-            ],
-          ),
-        ),
-        
-        // Directions button with better error handling
-        if (!_isLoadingRoute && _duration != null && _distance != null)
-          Positioned(
-            bottom: 16,
-            left: 16,
-            right: 16,
-            child: GestureDetector(
-              onTap: _steps.isNotEmpty ? _showDirections : null,
-              child: Container(
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: _steps.isNotEmpty ? _getModeColor() : Colors.grey[400],
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: (_steps.isNotEmpty ? _getModeColor() : Colors.grey[400]!).withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: Offset(0, 4),
+        // Starting Navigation Overlay
+        if (_isStartingNavigation)
+          Container(
+            color: Colors.white,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Large animated loading indicator
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: Colors.blue[50],
+                      borderRadius: BorderRadius.circular(60),
+                      border: Border.all(color: Colors.blue[100]!, width: 2),
                     ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(_getModeIcon(), color: Colors.white, size: 20),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _steps.isNotEmpty 
-                            ? 'View Directions • $_distance • $_duration'
-                            : 'Route info: $_distance • $_duration',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
+                    child: Center(
+                      child: SizedBox(
+                        width: 60,
+                        height: 60,
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.blue[600]!),
+                          strokeWidth: 4,
                         ),
-                        textAlign: TextAlign.center,
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        
-        // Loading indicator
-        if (_isLoadingRoute)
-          Positioned(
-            bottom: 16,
-            left: 16,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.7),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                  
+                  SizedBox(height: 32),
+                  
+                  // Starting navigation text
+                  Text(
+                    'Starting Navigation',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[800],
                     ),
                   ),
-                  SizedBox(width: 8),
-                  Text(
-                    'Loading ${_getModeLabel().toLowerCase()} route...',
-                    style: TextStyle(color: Colors.white, fontSize: 12),
+                  
+                  SizedBox(height: 12),
+                  
+                  // Destination info
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      children: [
+                        Text(
+                          'to ${widget.destinationName}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.blue[600],
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          widget.destinationAddress,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  SizedBox(height: 24),
+                  
+                  // Loading steps indicator
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 32),
+                    child: Column(
+                      children: [
+                        _buildLoadingStep('Getting your location', true),
+                        _buildLoadingStep('Finding best route', _isLoadingRoute),
+                        _buildLoadingStep('Preparing directions', !_isLoadingRoute),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
           ),
+        
+        // Show controls only when navigation is ready
+        if (!_isStartingNavigation) ...[
+          // Transportation mode selector
+          Positioned(
+            top: 16,
+            left: 16,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  _buildModeButton('driving', Icons.directions_car),
+                  _buildModeButton('walking', Icons.directions_walk),
+                  _buildModeButton('transit', Icons.directions_bus),
+                  _buildModeButton('bicycling', Icons.directions_bike),
+                ],
+              ),
+            ),
+          ),
+          
+          // Zoom controls
+          Positioned(
+            top: 16,
+            right: 16,
+            child: Column(
+              children: [
+                _buildZoomButton(Icons.add, () {
+                  _mapController?.animateCamera(CameraUpdate.zoomIn());
+                }),
+                SizedBox(height: 8),
+                _buildZoomButton(Icons.remove, () {
+                  _mapController?.animateCamera(CameraUpdate.zoomOut());
+                }),
+              ],
+            ),
+          ),
+          
+          // Directions button
+          if (!_isLoadingRoute && _duration != null && _distance != null)
+            Positioned(
+              bottom: 16,
+              left: 16,
+              right: 16,
+              child: GestureDetector(
+                onTap: _steps.isNotEmpty ? _showDirections : null,
+                child: Container(
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: _steps.isNotEmpty ? _getModeColor() : Colors.grey[400],
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (_steps.isNotEmpty ? _getModeColor() : Colors.grey[400]!).withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(_getModeIcon(), color: Colors.white, size: 20),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _steps.isNotEmpty 
+                              ? 'View Directions • $_distance • $_duration'
+                              : 'Route info: $_distance • $_duration',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          
+          // Route loading indicator (smaller, bottom corner)
+          if (_isLoadingRoute)
+            Positioned(
+              bottom: 16,
+              left: 16,
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      'Loading route...',
+                      style: TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ],
+    );
+  }
+
+  Widget _buildLoadingStep(String text, bool isActive) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              color: isActive ? Colors.blue[600] : Colors.grey[300],
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: isActive
+                ? SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 1.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Icon(
+                    Icons.check,
+                    size: 12,
+                    color: Colors.white,
+                  ),
+          ),
+          SizedBox(width: 12),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 14,
+              color: isActive ? Colors.grey[800] : Colors.grey[500],
+              fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1102,5 +1250,280 @@ class _InteractiveMapState extends State<InteractiveMap> {
     // You could implement logic here to check if certain modes are available
     // For now, we'll assume all modes are available but handle errors gracefully
     return true;
+  }
+}
+
+class AnimatedCenterCard extends StatefulWidget {
+  final OpenCenter center;
+  final int index;
+
+  const AnimatedCenterCard({
+    Key? key,
+    required this.center,
+    required this.index,
+  }) : super(key: key);
+
+  @override
+  _AnimatedCenterCardState createState() => _AnimatedCenterCardState();
+}
+
+class _AnimatedCenterCardState extends State<AnimatedCenterCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<Offset> _slideAnimation;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
+  
+  // Add this state variable
+  bool _isStartingNavigation = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 600),
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: Offset(0, 0.2),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+
+    _scaleAnimation = Tween<double>(
+      begin: 0.9,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+
+    // Start the animation with a delay based on index
+    Future.delayed(Duration(milliseconds: widget.index * 100), () {
+      if (mounted) {
+        _animationController.forward();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _navigateToCenter() async {
+    // Set the loading state immediately
+    if (mounted) {
+      setState(() {
+        _isStartingNavigation = true;
+      });
+    }
+    
+    // Add a small delay to show the "Starting..." text
+    await Future.delayed(Duration(milliseconds: 800));
+    
+    // Navigate to the directions page
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CoolingCenterDirectionsPage(center: widget.center),
+        ),
+      ).then((_) {
+        // Reset the state when returning from navigation
+        if (mounted) {
+          setState(() {
+            _isStartingNavigation = false;
+          });
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SlideTransition(
+      position: _slideAnimation,
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: ScaleTransition(
+          scale: _scaleAnimation,
+          child: Container(
+            margin: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Material(
+              elevation: 8,
+              shadowColor: Colors.black.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  gradient: LinearGradient(
+                    colors: [Colors.white, Colors.grey[50]!],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      Hero(
+                        tag: 'cooling_icon_${widget.index}',
+                        child: Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            gradient: LinearGradient(
+                              colors: [Colors.blue[400]!, Colors.cyan[300]!],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.blue.withValues(alpha: 0.3),
+                                blurRadius: 12,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.ac_unit_rounded,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.center.name,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey[800],
+                                height: 1.2,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.location_on_rounded,
+                                  size: 16,
+                                  color: Colors.grey[600],
+                                ),
+                                SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    widget.center.address,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey[600],
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 6),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.access_time_rounded,
+                                  size: 16,
+                                  color: Colors.green[600],
+                                ),
+                                SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    widget.center.window,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.green[600],
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                // Navigation button - now this will work properly
+                                Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: _isStartingNavigation ? null : _navigateToCenter,
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: AnimatedContainer(
+                                      duration: Duration(milliseconds: 300),
+                                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: _isStartingNavigation ? Colors.grey[400] : Colors.blue[600],
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          if (_isStartingNavigation) ...[
+                                            SizedBox(
+                                              width: 12,
+                                              height: 12,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                              ),
+                                            ),
+                                            SizedBox(width: 6),
+                                          ] else ...[
+                                            Icon(
+                                              Icons.navigation,
+                                              size: 14,
+                                              color: Colors.white,
+                                            ),
+                                            SizedBox(width: 4),
+                                          ],
+                                          AnimatedSwitcher(
+                                            duration: Duration(milliseconds: 300),
+                                            child: Text(
+                                              _isStartingNavigation ? 'Starting...' : 'Navigate',
+                                              key: ValueKey(_isStartingNavigation),
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
