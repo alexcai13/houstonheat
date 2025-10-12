@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mapbox_navigation/flutter_mapbox_navigation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:developer' as developer;
 
 enum TransportationMode {
@@ -33,7 +34,11 @@ class _NavigationPageState extends State<NavigationPage> {
   MapBoxNavigation? _directions;
   MapBoxOptions? _options;
   MapBoxNavigationViewController? _controller;
-  
+
+  GoogleMapController? _previewMapController; // NEW
+  CameraPosition? _previewCameraPosition;    // NEW
+  Set<Marker> _previewMarkers = const {};    // NEW
+
   NavigationMode _currentMode = NavigationMode.preview;
   Position? _currentLocation;
   String? _instruction = 'Ready to navigate';
@@ -41,7 +46,7 @@ class _NavigationPageState extends State<NavigationPage> {
   double? _durationRemaining;
   String? _nextManeuver;
   
-  TransportationMode _selectedMode = TransportationMode.driving;
+  TransportationMode _selectedMode = TransportationMode.driving; // Default to driving
 
   @override
   void initState() {
@@ -51,31 +56,38 @@ class _NavigationPageState extends State<NavigationPage> {
   }
 
   void _setupPreview() {
-    double? destLat = widget.center['lat']?.toDouble();
-    double? destLon = widget.center['lon']?.toDouble();
+    final destLat = widget.center['lat']?.toDouble();
+    final destLon = widget.center['lon']?.toDouble();
+    if (destLat == null || destLon == null) return;
 
-    if (destLat != null && destLon != null) {
-      setState(() {
-        _options = MapBoxOptions(
-          initialLatitude: destLat,
-            initialLongitude: destLon,
-            zoom: 15.0,
-            tilt: 0.0,
-            bearing: 0.0,
-            enableRefresh: true,
-            alternatives: false,
-            voiceInstructionsEnabled: false,
-            bannerInstructionsEnabled: false,
-            allowsUTurnAtWayPoints: false,
-            mode: _getMapBoxMode(),
-            units: VoiceUnits.imperial,
-            simulateRoute: false,
-            animateBuildRoute: false,
-            longPressDestinationEnabled: false,
-            language: "en",
-        );
-      });
+    final markers = <Marker>{
+      Marker(
+        markerId: const MarkerId('destination'),
+        position: LatLng(destLat, destLon),
+        infoWindow: InfoWindow(
+          title: widget.center['name'] ?? 'Cooling Center',
+        ),
+      ),
+    };
+
+    if (_currentLocation != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('origin'),
+          position: LatLng(_currentLocation!.latitude, _currentLocation!.longitude),
+          infoWindow: const InfoWindow(title: 'You'),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+        ),
+      );
     }
+
+    setState(() {
+      _previewMarkers = markers;
+      _previewCameraPosition = CameraPosition(
+        target: LatLng(destLat, destLon),
+        zoom: 15,
+      );
+    });
   }
 
   MapBoxNavigationMode _getMapBoxMode() {
@@ -164,6 +176,7 @@ class _NavigationPageState extends State<NavigationPage> {
         _currentLocation = await _getCurrentLocation();
       }
 
+      // CHANGED: Updated options for actual navigation
       _options = MapBoxOptions(
         initialLatitude: _currentLocation!.latitude,
         initialLongitude: _currentLocation!.longitude,
@@ -172,12 +185,12 @@ class _NavigationPageState extends State<NavigationPage> {
         bearing: 0.0,
         enableRefresh: true,
         alternatives: false,
-        voiceInstructionsEnabled: false,
+        voiceInstructionsEnabled: true, // CHANGED: Enable voice for navigation
         bannerInstructionsEnabled: true,
         allowsUTurnAtWayPoints: true,
         mode: _getMapBoxMode(),
         units: VoiceUnits.imperial,
-        simulateRoute: false,
+        simulateRoute: false, // CHANGED: Set to false for real navigation
         animateBuildRoute: true,
         longPressDestinationEnabled: false,
         language: "en",
@@ -196,20 +209,27 @@ class _NavigationPageState extends State<NavigationPage> {
         ),
       ];
 
+      // CHANGED: Start navigation and immediately switch to navigation mode
       await _directions!.startNavigation(
         wayPoints: wayPoints,
         options: _options!,
       );
 
-      setState(() {
-        _currentMode = NavigationMode.navigating;
-      });
+      // CHANGED: Set to navigating mode immediately after starting
+      if (mounted) {
+        setState(() {
+          _currentMode = NavigationMode.navigating;
+          _instruction = 'Starting navigation...';
+        });
+      }
 
     } catch (e) {
       developer.log('Start navigation error: $e');
-      setState(() {
-        _instruction = 'Failed to start navigation';
-      });
+      if (mounted) {
+        setState(() {
+          _instruction = 'Failed to start navigation: ${e.toString()}';
+        });
+      }
     }
   }
 
@@ -264,6 +284,12 @@ class _NavigationPageState extends State<NavigationPage> {
         switch (eventType) {
           case 'navigation.instruction':
           case 'route_progress':
+            // CHANGED: Ensure we're in navigation mode when receiving navigation events
+            if (_currentMode != NavigationMode.navigating) {
+              setState(() {
+                _currentMode = NavigationMode.navigating;
+              });
+            }
             _handleNavigationProgress(event);
             break;
           case 'navigation.arrival':
@@ -274,7 +300,14 @@ class _NavigationPageState extends State<NavigationPage> {
               _instruction = 'Recalculating route...';
             });
             break;
+          case 'navigation.started': // CHANGED: Handle navigation started event
+            setState(() {
+              _currentMode = NavigationMode.navigating;
+              _instruction = 'Navigation started';
+            });
+            break;
           default:
+            developer.log('Unhandled route event: $eventType');
             break;
         }
       }
@@ -390,19 +423,18 @@ class _NavigationPageState extends State<NavigationPage> {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: _options != null
-                    ? MapBoxNavigationView(
-                        options: _options!,
-                        onRouteEvent: _onRouteEvent,
-                        onCreated: (MapBoxNavigationViewController controller) {
-                          _controller = controller;
-                        },
-                      )
-                    : Container(
+                child: _previewCameraPosition == null
+                    ? Container(
                         color: Colors.grey[200],
-                        child: const Center(
-                          child: CircularProgressIndicator(),
-                        ),
+                        child: const Center(child: CircularProgressIndicator()),
+                      )
+                    : GoogleMap(
+                        initialCameraPosition: _previewCameraPosition!,
+                        markers: _previewMarkers,
+                        zoomControlsEnabled: false,
+                        myLocationEnabled: false,
+                        myLocationButtonEnabled: false,
+                        onMapCreated: (controller) => _previewMapController = controller,
                       ),
               ),
             ),
@@ -414,7 +446,13 @@ class _NavigationPageState extends State<NavigationPage> {
               width: double.infinity,
               height: 54,
               child: ElevatedButton(
-                onPressed: _startNavigation,
+                onPressed: () async {
+                  // CHANGED: Show loading state while starting navigation
+                  setState(() {
+                    _instruction = 'Starting navigation...';
+                  });
+                  await _startNavigation();
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue[600],
                   foregroundColor: Colors.white,
@@ -423,9 +461,9 @@ class _NavigationPageState extends State<NavigationPage> {
                   ),
                   elevation: 4,
                 ),
-                child: const Text(
-                  'Start Navigation',
-                  style: TextStyle(
+                child: Text(
+                  'Start ${_selectedMode == TransportationMode.driving ? 'Driving' : _selectedMode == TransportationMode.walking ? 'Walking' : 'Cycling'} Navigation', // CHANGED: Show selected mode
+                  style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
                   ),
