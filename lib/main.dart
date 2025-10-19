@@ -60,7 +60,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final List<Widget> _pages = [
       CoolingCentersPage(),
-      MapPage(),
+      HeatMapPage(),
       WeatherScreen(
         lat: 29.7604,
         lon: -95.3698,

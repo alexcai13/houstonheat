@@ -753,7 +753,7 @@ class _CoolingCentersPageState extends State<CoolingCentersPage>
       },
       {
         'icon': Icons.location_on,
-        'title': 'Distance Shown',
+        'title': 'See Closest',
         'description': 'Centers are sorted by distance from your current location',
       },
       {
