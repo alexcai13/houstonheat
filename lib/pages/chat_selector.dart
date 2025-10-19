@@ -92,7 +92,7 @@ class _ChatSelectorPageState extends State<ChatSelectorPage>
                 return Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Colors.purple[50]!, Colors.white],
+                      colors: [Colors.blue[50]!, Colors.white],
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                     ),
@@ -165,13 +165,13 @@ class _ChatSelectorPageState extends State<ChatSelectorPage>
                           Container(
                             padding: EdgeInsets.all(24),
                             decoration: BoxDecoration(
-                              color: Colors.purple[50],
+                              color: Colors.blue[50],
                               borderRadius: BorderRadius.circular(24),
                             ),
                             child: Icon(
                               Icons.chat_bubble_outline,
                               size: 64,
-                              color: Colors.purple[400],
+                              color: Colors.blue[400],
                             ),
                           ),
                           SizedBox(height: 24),
@@ -233,14 +233,14 @@ class _ChatSelectorPageState extends State<ChatSelectorPage>
             height: 64,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.purple[400]!, Colors.purple[600]!],
+                colors: [Colors.blue[400]!, Colors.blue[600]!],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(32),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.purple.withValues(alpha: 0.4),
+                  color: Colors.blue.withValues(alpha: 0.4),
                   blurRadius: 16,
                   offset: Offset(0, 8),
                 ),
@@ -368,13 +368,13 @@ class _AnimatedChatCardState extends State<AnimatedChatCard>
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
                             gradient: LinearGradient(
-                              colors: [Colors.purple[400]!, Colors.pink[300]!],
+                              colors: [Colors.blue[400]!, Colors.blue[300]!],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.purple.withValues(alpha: 0.3),
+                                color: Colors.blue.withValues(alpha: 0.3),
                                 blurRadius: 12,
                                 offset: Offset(0, 4),
                               ),
@@ -500,10 +500,10 @@ class ModernDrawer extends StatelessWidget {
                   leading: Container(
                     padding: EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.purple[50],
+                      color: Colors.blue[50],
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(Icons.home, color: Colors.purple[600]),
+                    child: Icon(Icons.home, color: Colors.blue[600]),
                   ),
                   title: Text(
                     'Chat Homepage',
