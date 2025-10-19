@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import "dart:math";
+import '../services/chat_service.dart';
 
 IconData getWeatherIcon(String? condition) {
   if (condition == null) return Icons.help_outline;
@@ -67,6 +68,10 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
   bool showActualTemp = true;
   bool isLoading = true;
   String? errorMessage;
+  String? weatherSummary;
+  bool isLoadingSummary = false;
+  DateTime? lastRefreshTime;
+  final ChatGPTService _chatService = ChatGPTService('***REMOVED***');
   
   late AnimationController _fadeController;
   late AnimationController _slideController;
@@ -91,6 +96,18 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
       CurvedAnimation(parent: _slideController, curve: Curves.easeOut),
     );
     fetchWeatherData();
+    _startAutoRefresh();
+  }
+
+  void _startAutoRefresh() {
+    // Refresh every 3 hours
+    Future.delayed(Duration(hours: 3), () {
+      if (mounted) {
+        print('Auto-refreshing weather data...');
+        fetchWeatherData();
+        _startAutoRefresh(); // Schedule next refresh
+      }
+    });
   }
 
   @override
@@ -117,15 +134,60 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
 
       setState(() {
         isLoading = false;
+        lastRefreshTime = DateTime.now();
       });
       
       _fadeController.forward();
       _slideController.forward();
+      
+      // Fetch weather summary after all data is loaded
+      _fetchWeatherSummary();
     } catch (e) {
       print('Error fetching weather data: $e');
       setState(() {
         errorMessage = "Error loading weather data: $e";
         isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _fetchWeatherSummary() async {
+    if (currentTempF == null || feelsLikeF == null || condition == null) {
+      print('Cannot fetch weather summary - missing weather data');
+      return;
+    }
+    
+    setState(() {
+      isLoadingSummary = true;
+      weatherSummary = null; // Clear old summary
+    });
+
+    try {
+      print('Fetching weather summary...');
+      print('Current temp: $currentTempF, Feels like: $feelsLikeF');
+      print('Hourly forecast length: ${hourlyForecast.length}');
+      print('Daily forecast length: ${dailyForecast.length}');
+      
+      final summary = await _chatService.getWeatherSummary(
+        currentTemp: currentTempF!,
+        feelsLike: feelsLikeF!,
+        condition: condition!,
+        cityName: widget.cityName,
+        hourlyForecast: hourlyForecast,
+        dailyForecast: dailyForecast,
+      );
+      
+      print('Received summary: $summary');
+      
+      setState(() {
+        weatherSummary = summary;
+        isLoadingSummary = false;
+      });
+    } catch (e) {
+      print('Error fetching weather summary: $e');
+      setState(() {
+        weatherSummary = 'Stay safe and hydrated today!'; // Fallback message
+        isLoadingSummary = false;
       });
     }
   }
@@ -397,88 +459,145 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
                             ),
                           ],
                         ),
-                        child: Row(
+                        child: Column(
                           children: [
-                            // Weather Icon (Left side)
-                            Container(
-                              width: 100,
-                              height: 100,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[50],
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Padding(
-                                padding: EdgeInsets.all(8),
-                                child: iconBaseUri != null
-                                    ? ClipRRect(
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: SvgPicture.network(
-                                          iconBaseUri! + '.svg',
-                                          width: 84,
-                                          height: 84,
-                                          fit: BoxFit.contain,
-                                          errorBuilder: (context, error, stackTrace) => 
-                                              Icon(getWeatherIcon(condition), size: 50, color: Colors.blue[400]),
+                            // Top row with icon, temp, and feels like
+                            Row(
+                              children: [
+                                // Weather Icon (Left side)
+                                Container(
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[50],
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Padding(
+                                    padding: EdgeInsets.all(8),
+                                    child: iconBaseUri != null
+                                        ? ClipRRect(
+                                            borderRadius: BorderRadius.circular(12),
+                                            child: SvgPicture.network(
+                                              iconBaseUri! + '.svg',
+                                              width: 64,
+                                              height: 64,
+                                              fit: BoxFit.contain,
+                                              errorBuilder: (context, error, stackTrace) => 
+                                                  Icon(getWeatherIcon(condition), size: 40, color: Colors.blue[400]),
+                                            ),
+                                          )
+                                        : Icon(getWeatherIcon(condition), size: 40, color: Colors.blue[400]),
+                                  ),
+                                ),
+                                
+                                SizedBox(width: 16),
+                                
+                                // Main Temperature Section (Center)
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        "${currentTempF?.toStringAsFixed(0)}°F",
+                                        style: textStyle.copyWith(
+                                          fontSize: 42,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.grey[800],
                                         ),
-                                      )
-                                    : Icon(getWeatherIcon(condition), size: 50, color: Colors.blue[400]),
-                              ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                
+                                SizedBox(width: 16),
+                                
+                                // Feels Like Section (Right side)
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      "Feels like",
+                                      style: textStyle.copyWith(
+                                        fontSize: 12,
+                                        color: Colors.grey[500],
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Container(
+                                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: tempToColor(feelsLikeF ?? 0).withValues(alpha: 0.6),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all( 
+                                          color: tempToColor(feelsLikeF ?? 0).withValues(alpha: 1),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        "${feelsLikeF?.toStringAsFixed(0)}°F",
+                                        style: textStyle.copyWith(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                             
-                            SizedBox(width: 24),
-                            
-                            // Main Temperature Section (Center)
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.center,
+                            // Weather Summary below
+                            SizedBox(height: 16),
+                            Container(
+                              padding: EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.blue[50],
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Row(
                                 children: [
-                                  Text(
-                                    "${currentTempF?.toStringAsFixed(0)}°F",
-                                    style: textStyle.copyWith(
-                                      fontSize: 48,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey[800],
-                                    ),
+                                  Icon(
+                                    Icons.lightbulb_outline,
+                                    color: Colors.blue[700],
+                                    size: 20,
+                                  ),
+                                  SizedBox(width: 12),
+                                  Expanded(
+                                    child: isLoadingSummary
+                                        ? Row(
+                                            children: [
+                                              SizedBox(
+                                                width: 16,
+                                                height: 16,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue[400]!),
+                                                ),
+                                              ),
+                                              SizedBox(width: 12),
+                                              Text(
+                                                'Getting weather insights...',
+                                                style: textStyle.copyWith(
+                                                  fontSize: 14,
+                                                  color: Colors.blue[700],
+                                                  fontStyle: FontStyle.italic,
+                                                ),
+                                              ),
+                                            ],
+                                          )
+                                        : Text(
+                                            weatherSummary ?? 'Loading weather advice...',
+                                            style: textStyle.copyWith(
+                                              fontSize: 14,
+                                              color: Colors.blue[900],
+                                              height: 1.4,
+                                            ),
+                                          ),
                                   ),
                                 ],
                               ),
-                            ),
-                            
-                            SizedBox(width: 24),
-                            
-                            // Feels Like Section (Right side)
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text(
-                                  "Feels like",
-                                  style: textStyle.copyWith(
-                                    fontSize: 14,
-                                    color: Colors.grey[500],
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  decoration: BoxDecoration(
-                                    color: tempToColor(feelsLikeF ?? 0).withValues(alpha: 0.6),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all( 
-                                      color: tempToColor(feelsLikeF ?? 0).withValues(alpha: 1),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    "${feelsLikeF?.toStringAsFixed(0)}°F",
-                                    style: textStyle.copyWith(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                ),
-                              ],
                             ),
                           ],
                         ),

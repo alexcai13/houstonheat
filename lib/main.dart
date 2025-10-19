@@ -29,7 +29,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 2; // Start on Weather screen
   bool _showChatSelector = false; // <-- Add this
   List<Map<String, dynamic>> _chatHistories = [
   ];

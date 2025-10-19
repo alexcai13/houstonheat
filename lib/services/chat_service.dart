@@ -87,4 +87,78 @@ class ChatGPTService {
       throw Exception('Failed to get title: ${response.body}');
     }
   }
+
+  Future<String> getWeatherSummary({
+    required double currentTemp,
+    required double feelsLike,
+    required String condition,
+    required String cityName,
+    List<Map<String, dynamic>>? hourlyForecast,
+    List<Map<String, dynamic>>? dailyForecast,
+  }) async {
+    final url = Uri.parse('https://api.groq.com/openai/v1/chat/completions');
+    final headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $apiKey',
+    };
+
+    // Build comprehensive weather context
+    String weatherContext = """Current weather in $cityName:
+    - Temperature: ${currentTemp.toStringAsFixed(0)}°F
+    - Feels like: ${feelsLike.toStringAsFixed(0)}°F
+    - Condition: $condition""";
+
+    if (hourlyForecast != null && hourlyForecast.isNotEmpty) {
+      weatherContext += "\n\nNext few hours:";
+      for (var i = 0; i < hourlyForecast.length && i < 6; i++) {
+        final hour = hourlyForecast[i];
+        weatherContext += "\n- ${hour['time']}: ${hour['temp'].toStringAsFixed(0)}°F, feels like ${hour['feels'].toStringAsFixed(0)}°F, ${hour['condition']}";
+      }
+    }
+
+    if (dailyForecast != null && dailyForecast.isNotEmpty) {
+      weatherContext += "\n\nToday's forecast:";
+      final today = dailyForecast[0];
+      weatherContext += "\n- High: ${today['high'].toStringAsFixed(0)}°F, Low: ${today['low'].toStringAsFixed(0)}°F";
+      weatherContext += "\n- Condition: ${today['condition']}";
+      weatherContext += "\n- Precipitation chance: ${today['precipitationChance']}%";
+    }
+
+    const systemPrompt = """You are a friendly weather assistant. Generate a single conversational sentence (max 20 words) giving practical advice and suggestions for the day based on the weather. 
+
+    Examples:
+    - "Expect muggy air this afternoon — it's a good day for indoor plans until after 6 p.m."
+    - "Not a good day to bike — high ozone alert at 3 PM."
+    - "Great time to walk the dog around 7 PM when the breeze picks up."
+
+    Be concise, friendly, and actionable. Only return the single sentence, nothing else.""";
+
+    final messages = [
+      {"role": "system", "content": systemPrompt},
+      {"role": "user", "content": "Based on this weather data, give me a one-sentence summary:\n\n$weatherContext"},
+    ];
+
+    final body = jsonEncode({
+      "model": "openai/gpt-oss-120b",
+      "messages": messages,
+      "max_tokens": 400,
+      "temperature": 0.8,
+    });
+
+    final response = await http.post(url, headers: headers, body: body);
+    
+    print('Weather summary API response status: ${response.statusCode}');
+    if (response.statusCode != 200) {
+      print('Weather summary API error body: ${response.body}');
+    }
+    
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final summary = data['choices'][0]['message']['content'].trim().replaceAll('"', '');
+      print('Weather summary generated: $summary');
+      return summary;
+    } else {
+      throw Exception('Failed to get weather summary: ${response.body}');
+    }
+  }
 }
