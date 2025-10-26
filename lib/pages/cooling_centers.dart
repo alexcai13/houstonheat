@@ -5,9 +5,9 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:csv/csv.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest_all.dart' as tzdata;
+import 'package:intl/intl.dart';
 import 'navigation.dart';
 
-// -------------------- MODEL --------------------
 class OpenCenter {
   final String name;
   final String address;
@@ -26,7 +26,6 @@ class OpenCenter {
   });
 }
 
-// -------------------- SERVICE --------------------
 class CoolingCentersService {
   CoolingCentersService() {
     tzdata.initializeTimeZones();
@@ -34,6 +33,7 @@ class CoolingCentersService {
   }
 
   late final tz.Location _chicago;
+  tz.Location get location => _chicago;
 
   (tz.TZDateTime start, tz.TZDateTime end) _parseRange(
     String rng,
@@ -487,6 +487,8 @@ class _CoolingCentersPageState extends State<CoolingCentersPage>
   final TextEditingController _searchController = TextEditingController();
   List<OpenCenter> _allCenters = [];
   List<OpenCenter> _filteredCenters = [];
+  late final CoolingCentersService _service;
+  tz.TZDateTime? _mockNow;
 
   double _deg2rad(double deg) => deg * (pi / 180);
 
@@ -499,6 +501,15 @@ class _CoolingCentersPageState extends State<CoolingCentersPage>
         (sin(dLon / 2) * sin(dLon / 2));
     final c = 2 * atan2(sqrt(a), sqrt(1 - a));
     return R * c;
+  }
+
+  void _applyMockTime(tz.TZDateTime? override) {
+    setState(() {
+      _mockNow = override;
+      _allCenters = [];
+      _filteredCenters = [];
+      _futureOpenCenters = _getAllOpenCentersByDistance();
+    });
   }
 
   Future<List<OpenCenter>> _getAllOpenCentersByDistance() async {
@@ -515,8 +526,10 @@ class _CoolingCentersPageState extends State<CoolingCentersPage>
 
       // Load and parse CSV
       final csvText = await rootBundle.loadString('assets/Houston_Cooling_Centers.csv');
-      final service = CoolingCentersService();
-      final openCenters = service.openNowFromCsv(csvText);
+      final openCenters = _service.openNowFromCsv(
+        csvText,
+        now: _mockNow,
+      );
 
       // Calculate distances for all open centers
       for (var center in openCenters) {
@@ -533,8 +546,10 @@ class _CoolingCentersPageState extends State<CoolingCentersPage>
     } catch (e) {
       // If location fails, still get open centers but without distance sorting
       final csvText = await rootBundle.loadString('assets/Houston_Cooling_Centers.csv');
-      final service = CoolingCentersService();
-      return service.openNowFromCsv(csvText);
+      return _service.openNowFromCsv(
+        csvText,
+        now: _mockNow,
+      );
     }
   }
 
@@ -543,6 +558,7 @@ class _CoolingCentersPageState extends State<CoolingCentersPage>
   @override
   void initState() {
     super.initState();
+    _service = CoolingCentersService();
     _headerController = AnimationController(
       duration: Duration(milliseconds: 800),
       vsync: this,
@@ -588,6 +604,45 @@ class _CoolingCentersPageState extends State<CoolingCentersPage>
         }).toList();
       });
     }
+  }
+
+  Future<void> _pickMockTime() async {
+    final location = _service.location;
+    final initial = _mockNow ?? tz.TZDateTime.now(location);
+
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime.now().subtract(Duration(days: 7)),
+      lastDate: DateTime.now().add(Duration(days: 30)),
+    );
+    if (pickedDate == null) return;
+
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initial),
+    );
+    if (pickedTime == null) return;
+
+    final selected = tz.TZDateTime(
+      location,
+      pickedDate.year,
+      pickedDate.month,
+      pickedDate.day,
+      pickedTime.hour,
+      pickedTime.minute,
+    );
+
+    _applyMockTime(selected);
+  }
+
+  void _clearMockTime() {
+    _applyMockTime(null);
+  }
+
+  String _formatMockTime(tz.TZDateTime time) {
+    final formatter = DateFormat('EEE, MMM d • h:mm a');
+    return formatter.format(time);
   }
 
   Widget _buildSearchBar() {

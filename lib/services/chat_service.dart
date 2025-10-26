@@ -17,17 +17,20 @@ class ChatGPTService {
       'Authorization': 'Bearer $apiKey',
     };
 
-    // You can add weather context to the system prompt for more relevant answers
-    // Make weather context more prominent in system prompt
+    // Provide weather data to the model but keep it "internal":
+    // do NOT mention it unless the user asks about weather or it is directly
+    // relevant to the user's question.
     final systemPrompt = weatherContext != null && weatherContext.isNotEmpty
       ? """You are a concise assistant specializing in weather and heat safety.
-          CURRENT WEATHER: $weatherContext
-          INSTRUCTIONS:
-          - Give brief, complete answers
-          - No lengthy explanations
-          - Include current weather when relevant
-          - Be direct and to the point
-          - Never say you can't access weather data"""
+          You have access to the following CURRENT WEATHER data (for internal use only):
+          $weatherContext
+
+          IMPORTANT GUIDELINES:
+          - Do NOT mention or summarize the weather data unless the user asks about weather or the user explicitly references it.
+          - If the user asks about weather, use the provided data to answer succinctly and accurately.
+          - Give brief, helpful answers; avoid unsolicited weather details.
+          - Be direct and to the point.
+          """
       : "You are a concise assistant specializing in weather and heat safety. Give brief, complete answers.";
     print('Weather context: $weatherContext');
     final messages = <Map<String, String>>[

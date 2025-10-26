@@ -35,7 +35,7 @@ class _NavigationPageState extends State<NavigationPage> {
   MapBoxOptions? _options;
   MapBoxNavigationViewController? _controller;
 
-  GoogleMapController? _previewMapController; // NEW
+  GoogleMapController? _previewMapController; 
   CameraPosition? _previewCameraPosition;    // NEW
   Set<Marker> _previewMarkers = const {};    // NEW
 

@@ -36,7 +36,7 @@ IconData getPrecipitationIcon(String? condition) {
   if (cond.contains('hail')) return Icons.circle;
   if (cond.contains('thunder') || cond.contains('storm')) return Icons.flash_on;
   if (cond.contains('rain') || cond.contains('shower') || cond.contains('drizzle')) return Icons.water_drop;
-  return Icons.water_drop; // Default to water drop for general precipitation
+  return Icons.water_drop; 
 }
 
 class WeatherScreen extends StatefulWidget {
@@ -939,7 +939,7 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
 
                                     // Precipitation - Fixed width space
                                     SizedBox(
-                                      width: 60, // Fixed width to prevent icon movement
+                                      width: 72, // Slightly wider to accommodate 100% without overflow
                                       child: Container(
                                         padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                         decoration: BoxDecoration(

@@ -17,33 +17,30 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Weather & Cooling Centers',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: HomePage(), // <- set resources page as start
+      home: HomePage(),
     );
   }
 }
 
-// -------------------- NAVIGATION --------------------
 class HomePage extends StatefulWidget {
   @override
   _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  int _selectedIndex = 2; // Start on Weather screen
-  bool _showChatSelector = false; // <-- Add this
+  int _selectedIndex = 2; 
+  bool _showChatSelector = false; 
   List<Map<String, dynamic>> _chatHistories = [
   ];
   int _currentChatIndex = 0;
   Map<String, dynamic>? _currentWeatherData;
 
   void _onSelectChat(List<Map<String, dynamic>> chats, int chatIndex) {
-    print('Selecting chat $chatIndex (total chats: ${chats.length})');
     if (chatIndex >= chats.length) {
-      print('Warning: Invalid chat index, resetting to last chat');
       chatIndex = Math.max(0, chats.length - 1);
     }
     setState(() {
-      _chatHistories = List<Map<String, dynamic>>.from(chats); // Create a new list
+      _chatHistories = List<Map<String, dynamic>>.from(chats); 
       _currentChatIndex = chatIndex;
       _selectedIndex = 4;
       _showChatSelector = false;
@@ -52,7 +49,7 @@ class _HomePageState extends State<HomePage> {
 
   void _updateChats(List<Map<String, dynamic>> chats) {
     setState(() {
-      _chatHistories = List<Map<String, dynamic>>.from(chats); // Create a new list
+      _chatHistories = List<Map<String, dynamic>>.from(chats); 
     });
   }
 
