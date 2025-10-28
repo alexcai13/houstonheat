@@ -723,9 +723,6 @@
             // Load heat map image
             loadHeatMapImage();
             
-            // Force image overlay render after map loads
-            setTimeout(forceImageOverlayRender, 2000);
-            
             // Add click handler to the map
             mapObj.on('click', function(e) {
                 showTooltip(e.originalEvent, e.latlng.lat, e.latlng.lng, mapObj);
