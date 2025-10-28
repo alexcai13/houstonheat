@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../services/chat_service.dart';
 class ChatPage extends StatefulWidget {
   final Map<String, dynamic>? weatherData;
@@ -25,10 +26,10 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>(); // Add this line
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   bool _isLoading = false;
   bool _titleRequested = false;
-  final ChatGPTService _chatService = ChatGPTService('***REMOVED***');
+  late final ChatGPTService _chatService;
 
   late AnimationController _messageAnimationController;
   late AnimationController _inputAnimationController;
@@ -37,6 +38,7 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    _chatService = ChatGPTService(dotenv.env['GROQ_API_KEY'] ?? '');
     _messageAnimationController = AnimationController(
       duration: Duration(milliseconds: 300),
       vsync: this,
@@ -126,6 +128,7 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
         }
       }
     } catch (e) {
+      print('Error in chat: $e');
       final chatsWithError = List<Map<String, dynamic>>.from(updatedChats);
       setState(() {
         chatsWithError[widget.chatIndex]['messages'].add({

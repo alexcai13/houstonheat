@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import "dart:math";
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../services/chat_service.dart';
 
 IconData getWeatherIcon(String? condition) {
@@ -157,9 +158,11 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
       return;
     }
     
+    if (!mounted) return;
+    
     setState(() {
       isLoadingSummary = true;
-      weatherSummary = null; // Clear old summary
+      weatherSummary = null;
     });
 
     try {
@@ -179,21 +182,26 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
       
       print('Received summary: $summary');
       
+      if (!mounted) return;
+      
       setState(() {
         weatherSummary = summary;
         isLoadingSummary = false;
       });
     } catch (e) {
       print('Error fetching weather summary: $e');
+      
+      if (!mounted) return;
+      
       setState(() {
-        weatherSummary = 'Stay safe and hydrated today!'; // Fallback message
+        weatherSummary = 'Stay safe and hydrated today!';
         isLoadingSummary = false;
       });
     }
   }
 
   Future<void> fetchCurrentWeather() async {
-    final apiKey = "***REMOVED***";
+    final apiKey = dotenv.env['GOOGLE_WEATHER_API_KEY'] ?? '';
     final currentUrl =
         "https://weather.googleapis.com/v1/currentConditions:lookup"
         "?location.latitude=${widget.lat}&location.longitude=${widget.lon}&key=$apiKey";
@@ -224,7 +232,7 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
   }
 
   Future<void> fetchHourlyForecast() async {
-    final apiKey = "***REMOVED***";
+    final apiKey = dotenv.env['GOOGLE_WEATHER_API_KEY'] ?? '';
     final hourlyUrl =
         "https://weather.googleapis.com/v1/forecast/hours:lookup?key=$apiKey&location.latitude=${widget.lat}&location.longitude=${widget.lon}&hours=12";
 
@@ -269,7 +277,7 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
   }
 
   Future<void> fetchDailyForecast() async {
-    final apiKey = "***REMOVED***";
+    final apiKey = dotenv.env['GOOGLE_WEATHER_API_KEY'] ?? '';
     final dailyUrl =
         "https://weather.googleapis.com/v1/forecast/days:lookup?key=$apiKey&location.latitude=${widget.lat}&location.longitude=${widget.lon}&days=7&pageSize=7";
 

@@ -21,9 +21,11 @@ dependencies:
   flutter_mapbox_navigation: ^0.2.2
   url_launcher: ^6.3.0
   webview_flutter: ^4.4.2
+  flutter_dotenv: ^6.0.0
 
 flutter:
   uses-material-design: true
   assets:
     - assets/Houston_Cooling_Centers.csv
     - assets/resources.json
+    - .env

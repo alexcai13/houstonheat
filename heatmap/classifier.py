@@ -9,47 +9,32 @@ import json
 from datetime import datetime
 
 class HeatConcentrationClassifier:
-    """
-    Grid-based classifier for identifying heat concentration areas in satellite images
-    """
-    
     def __init__(self, images_path: str, grid_size: int = 16):
         """
         Initialize the heat concentration classifier
-        
-        Args:
-            images_path: Path to the Images folder containing categorized satellite images
-            grid_size: Size of the grid cells for analysis (default: 16x16)
         """
         self.images_path = Path(images_path)
         self.grid_size = grid_size
         
-        # Heat concentration mapping based on land use types
-        # Scale: 0 (coolest) to 10 (hottest)
         self.heat_concentration_map = {
-            # Very Cool (0-2): Water bodies and dense vegetation
             'river': 0.5,
             'harbor': 1.0,
             'forest': 1.5,
-            
-            # Cool (2-4): Agricultural and recreational green spaces
+  
             'agricultural': 2.0,
             'golfcourse': 2.5,
             'chaparral': 3.0,
             'beach': 3.5,
             
-            # Moderate (4-6): Mixed and low-density areas
             'sparseresidential': 4.5,
             'mediumresidential': 5.5,
             'baseballdiamond': 5.0,
             'tenniscourt': 5.5,
             
-            # Hot (6-8): Dense residential and commercial
             'denseresidential': 6.5,
             'buildings': 7.0,
             'mobilehomepark': 6.0,
             
-            # Very Hot (8-10): Infrastructure and paved areas
             'parkinglot': 8.5,
             'freeway': 9.0,
             'runway': 9.5,
@@ -58,14 +43,13 @@ class HeatConcentrationClassifier:
             'storagetanks': 7.5
         }
         
-        # Color mapping for heat visualization
         self.heat_colors = {
-            'very_cool': (0, 100, 255),      # Blue
-            'cool': (0, 255, 100),           # Green-blue
-            'moderate': (0, 255, 0),         # Green
-            'warm': (255, 255, 0),           # Yellow
-            'hot': (255, 100, 0),            # Orange
-            'very_hot': (255, 0, 0)          # Red
+            'very_cool': (0, 100, 255),     
+            'cool': (0, 255, 100),           
+            'moderate': (0, 255, 0),         
+            'warm': (255, 255, 0),           
+            'hot': (255, 100, 0),            
+            'very_hot': (255, 0, 0)         
         }
         
         print(f"Initialized Heat Concentration Classifier")
@@ -74,7 +58,6 @@ class HeatConcentrationClassifier:
         print(f"Categories mapped: {len(self.heat_concentration_map)}")
     
     def get_heat_category(self, heat_score: float) -> str:
-        """Get heat category based on score"""
         if heat_score <= 2:
             return 'very_cool'
         elif heat_score <= 4:
@@ -89,22 +72,11 @@ class HeatConcentrationClassifier:
             return 'very_hot'
     
     def load_image(self, image_path: str) -> np.ndarray:
-        """
-        Load and preprocess an image
-        
-        Args:
-            image_path: Path to the image file
-            
-        Returns:
-            Preprocessed image as numpy array
-        """
         try:
-            # Load image using PIL (handles TIFF files better)
             img = Image.open(image_path)
             img = img.convert('RGB')
             img_array = np.array(img)
             
-            # Resize to standard size for consistent grid analysis
             img_resized = cv2.resize(img_array, (256, 256))
             
             return img_resized
@@ -113,15 +85,6 @@ class HeatConcentrationClassifier:
             return None
     
     def extract_grid_features(self, image: np.ndarray) -> Dict:
-        """
-        Extract features from image grid cells
-        
-        Args:
-            image: Input image as numpy array
-            
-        Returns:
-            Dictionary containing grid features
-        """
         h, w = image.shape[:2]
         cell_h, cell_w = h // self.grid_size, w // self.grid_size
         
@@ -135,19 +98,14 @@ class HeatConcentrationClassifier:
         
         for i in range(self.grid_size):
             for j in range(self.grid_size):
-                # Extract grid cell
                 cell = image[i*cell_h:(i+1)*cell_h, j*cell_w:(j+1)*cell_w]
                 
-                # RGB statistics
                 mean_rgb = np.mean(cell, axis=(0, 1))
                 std_rgb = np.std(cell, axis=(0, 1))
-                
-                # Vegetation index (NDVI approximation using RGB)
-                # Higher green relative to red indicates vegetation
+
                 r, g, b = mean_rgb
                 vegetation_idx = (g - r) / (g + r + 1e-6)
                 
-                # Urban index (brightness and low vegetation)
                 brightness = np.mean(mean_rgb)
                 urban_idx = brightness * (1 - max(0, vegetation_idx))
                 
@@ -211,16 +169,6 @@ class HeatConcentrationClassifier:
         return results
     
     def analyze_category(self, category: str, max_samples: int = 10) -> Dict:
-        """
-        Analyze heat concentration for all images in a category
-        
-        Args:
-            category: Category name to analyze
-            max_samples: Maximum number of samples to analyze
-            
-        Returns:
-            Dictionary containing analysis results
-        """
         category_path = self.images_path / category
         if not category_path.exists():
             print(f"Category path not found: {category_path}")
@@ -245,7 +193,6 @@ class HeatConcentrationClassifier:
         if not category_results:
             return None
         
-        # Aggregate statistics
         all_heat_scores = [r['mean_heat_score'] for r in category_results]
         all_heat_maps = np.array(heat_maps)
         
@@ -264,31 +211,17 @@ class HeatConcentrationClassifier:
         return analysis
     
     def create_heat_visualization(self, heat_map: np.ndarray, title: str = "Heat Concentration Map") -> plt.Figure:
-        """
-        Create a heat map visualization
-        
-        Args:
-            heat_map: 2D array of heat scores
-            title: Title for the plot
-            
-        Returns:
-            Matplotlib figure
-        """
         fig, ax = plt.subplots(figsize=(10, 8))
         
-        # Create heatmap
         im = ax.imshow(heat_map, cmap='RdYlBu_r', vmin=0, vmax=10, interpolation='nearest')
         
-        # Add colorbar
         cbar = plt.colorbar(im, ax=ax, shrink=0.8)
         cbar.set_label('Heat Concentration Score', rotation=270, labelpad=20)
         
-        # Customize plot
         ax.set_title(title, fontsize=14, fontweight='bold')
         ax.set_xlabel('Grid Column')
         ax.set_ylabel('Grid Row')
         
-        # Add grid lines
         ax.set_xticks(range(0, heat_map.shape[1], 2))
         ax.set_yticks(range(0, heat_map.shape[0], 2))
         ax.grid(True, alpha=0.3)
@@ -297,18 +230,7 @@ class HeatConcentrationClassifier:
         return fig
     
     def compare_categories(self, categories: List[str], max_samples: int = 5) -> Dict:
-        """
-        Compare heat concentrations across multiple categories
-        
-        Args:
-            categories: List of category names to compare
-            max_samples: Maximum samples per category
-            
-        Returns:
-            Comparison results dictionary
-        """
-        print(f"\nComparing heat concentrations across {len(categories)} categories...")
-        
+
         category_analyses = {}
         for category in categories:
             analysis = self.analyze_category(category, max_samples)
@@ -318,7 +240,6 @@ class HeatConcentrationClassifier:
         if not category_analyses:
             return None
         
-        # Create comparison summary
         comparison = {
             'categories': list(category_analyses.keys()),
             'analyses': category_analyses,
@@ -330,21 +251,12 @@ class HeatConcentrationClassifier:
         return comparison
     
     def create_comparison_visualization(self, comparison_results: Dict) -> plt.Figure:
-        """
-        Create visualization comparing categories
-        
-        Args:
-            comparison_results: Results from compare_categories
-            
-        Returns:
-            Matplotlib figure with comparison plots
-        """
+
         categories = comparison_results['categories']
         analyses = comparison_results['analyses']
         
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 12))
         
-        # 1. Bar chart of mean heat scores
         mean_scores = [analyses[cat]['mean_heat_score'] for cat in categories]
         base_scores = [analyses[cat]['base_heat_score'] for cat in categories]
         
@@ -359,7 +271,6 @@ class HeatConcentrationClassifier:
         ax1.legend()
         ax1.grid(True, alpha=0.3)
         
-        # 2. Box plot of heat score distributions
         heat_score_data = []
         labels = []
         for cat in categories:
@@ -367,7 +278,6 @@ class HeatConcentrationClassifier:
             heat_score_data.extend(scores)
             labels.extend([cat] * len(scores))
         
-        # Create box plot data
         box_data = [np.array([r['mean_heat_score'] for r in analyses[cat]['individual_results']]) 
                    for cat in categories]
         
@@ -378,7 +288,6 @@ class HeatConcentrationClassifier:
         ax2.tick_params(axis='x', rotation=45)
         ax2.grid(True, alpha=0.3)
         
-        # 3. Heat category distribution
         heat_categories = ['very_cool', 'cool', 'moderate', 'warm', 'hot', 'very_hot']
         cat_counts = {cat: {hc: 0 for hc in heat_categories} for cat in categories}
         
@@ -387,7 +296,6 @@ class HeatConcentrationClassifier:
                 heat_cat = self.get_heat_category(result['mean_heat_score'])
                 cat_counts[cat][heat_cat] += 1
         
-        # Stacked bar chart
         bottom = np.zeros(len(categories))
         colors = ['blue', 'cyan', 'green', 'yellow', 'orange', 'red']
         
@@ -402,11 +310,8 @@ class HeatConcentrationClassifier:
         ax3.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
         ax3.tick_params(axis='x', rotation=45)
         
-        # 4. Average heat map comparison
-        # Show mean heat maps for top 3 hottest categories
         hottest_cats = comparison_results['ranking'][:3]
         
-        # Create subplot for heat maps
         ax4.remove()
         gs = fig.add_gridspec(2, 2)
         
@@ -422,14 +327,6 @@ class HeatConcentrationClassifier:
         return fig
     
     def save_results(self, results: Dict, output_path: str):
-        """
-        Save analysis results to JSON file
-        
-        Args:
-            results: Results dictionary to save
-            output_path: Path to save the results
-        """
-        # Convert numpy arrays to lists for JSON serialization
         def convert_numpy(obj):
             if isinstance(obj, np.ndarray):
                 return obj.tolist()

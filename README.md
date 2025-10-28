@@ -1,16 +1,71 @@
-# my_app
+# Houston Heat 
 
-A new Flutter project.
+Houston Heat is a civic-minded mobile app designed to help Houston residents navigate the growing dangers of extreme heat through safe, efficient, and informed decision making. Its goal is to empower heat-sensitive individuals such as the elderly, children, residents in under-resourced neighborhoods, and those with health issues to navigate the city safely and comfortably.
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter application.
+### Heat Map
+- Full-resolution heat map overlay showing temperature variations across Houston
+- Click anywhere to see localized "feels like" temperature and heat score (0-10)
+- Real-time weather data integration via Google Weather API
 
-A few resources to get you started if this is your first Flutter project:
+### Weather Homepage
+- Current temperature and "feels like" readings
+- Hourly and 7-day forecast
+- AI-generated weather summary
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### Cooling Centers
+- Real-time list of open cooling centers in Houston
+- Automatically filtered by current time and day of week, sorted by distance 
+- Search functionality to find centers by name or address
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### AI Chatbot
+- Ask questions about weather, heat safety, and local resources
+- Context-aware responses using current weather data
+- Helpful tips for staying cool during heat waves
+
+### Resources
+- Heat safety tips and information
+- Links to external resources
+- Emergency contact information
+
+## Setup
+
+### Prerequisites
+- Flutter SDK (3.0+)
+- Dart SDK
+- iOS Simulator / Android Emulator / Physical device
+- Python 3.8+ 
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/alexcai13/houstonheat.git
+cd houstonheat
+```
+
+2. Install Flutter dependencies:
+```bash
+flutter pub get
+```
+
+3. **Set up environment variables:**
+   
+   Get your API keys from:
+   - **Google Weather API** - [Get API key](https://developers.google.com/maps/documentation/weather)
+   - **Groq AI API** - [Get API key](https://console.groq.com/)
+   - **Mapbox** - [Get access token](https://account.mapbox.com/)
+
+4. Run the app:
+```bash
+flutter run
+```
+
+## Contact
+
+Created by Alex Cai - [GitHub](https://github.com/alexcai13), Adi Kejriwal - [GitHub](https://github.com/A-person1243), and Samit Rath - [GitHub](https://github.com/g4ek) for the Congressional App Challenge 2025
+
+---
+
+**Made with ❤️ for Houston's heat resilience**

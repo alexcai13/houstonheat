@@ -185,12 +185,12 @@ class _NavigationPageState extends State<NavigationPage> {
         bearing: 0.0,
         enableRefresh: true,
         alternatives: false,
-        voiceInstructionsEnabled: true, // CHANGED: Enable voice for navigation
+        voiceInstructionsEnabled: true,
         bannerInstructionsEnabled: true,
         allowsUTurnAtWayPoints: true,
         mode: _getMapBoxMode(),
         units: VoiceUnits.imperial,
-        simulateRoute: false, // CHANGED: Set to false for real navigation
+        simulateRoute: false,
         animateBuildRoute: true,
         longPressDestinationEnabled: false,
         language: "en",
