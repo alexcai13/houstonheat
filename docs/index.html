@@ -512,10 +512,9 @@
             return baseFeelsLike + heatAdjustment;
         }
         
-        // Fetch weather from Google Weather API (single call)
         async function fetchWeather(lat, lon) {
-            const apiKey = '***REMOVED***';
-            const url = `https://weather.googleapis.com/v1/currentConditions:lookup?location.latitude=${lat}&location.longitude=${lon}&key=${apiKey}`;
+            const proxyUrl = 'https://your-app-name.onrender.com/api/weather';
+            const url = `${proxyUrl}?lat=${lat}&lon=${lon}`;
             
             try {
                 const response = await fetch(url);

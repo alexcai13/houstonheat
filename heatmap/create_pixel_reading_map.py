@@ -572,29 +572,21 @@ def create_map_from_image(image_path, output_html='houston_heatmap_click.html'):
     m.add_child(click_tooltip)
     
     m.save(output_html)
-    print(f"✅ Map saved: {output_html}")
     
     return output_html
 
 
 def main():
-    print("Houston Heat Map - Pixel Reading Version")
-    print("=" * 70)
-    
     img_path = 'temp_fullres_subtle.webp'
     if not Path(img_path).exists():
-        print(f"⚠️ Image not found: {img_path}")
-        print("Creating image from data...")
         
         data_file = Path('houston_extreme_highres_FIXED_ASSEMBLY.npy')
         if not data_file.exists():
-            print(f"❌ Data file not found: {data_file}")
+        
             return
         
         data = np.load(data_file)
-        print(f"✅ Loaded: {data.shape[0]:,} x {data.shape[1]:,} = {data.size:,} points")
-        
-        print("\n📸 Creating visualization image...")
+   
         colors = ['#0096ff', '#00c8ff', '#00e6b4', '#96ff00', '#ffdc00', '#ff3c3c']
         cmap = LinearSegmentedColormap.from_list('heat', colors, N=256)
         
@@ -605,32 +597,12 @@ def main():
         
         plt.savefig(img_path, dpi=100, bbox_inches='tight', pad_inches=0)
         plt.close()
-        print(f"✅ Saved: {img_path}")
+
     else:
-        print(f"✅ Using existing image: {img_path}")
-    
+        pass
+
     output = create_map_from_image(img_path)
-    
-    print("\n" + "=" * 70)
-    print("✅ PIXEL-READING MAP COMPLETE!")
-    print("=" * 70)
-    print("\n✨ How it works:")
-    print("   • Loads your 5120×5120 heat map image")
-    print("   • When you click, reads the pixel color at that spot")
-    print("   • Converts RGB color back to heat value (0-10)")
-    print("   • Shows EXACT values from your full-res data")
-    print("   • Blue = low heat, Red = high heat (accurate!)")
-    print("\n🌤️  Weather API Usage:")
-    print("   • Makes 1 API call when page loads (Houston downtown)")
-    print("   • Current temp shown at top right")
-    print("   • Click anywhere to see adjusted feels-like + heat score")
-    print("   • Ultra-sleek modern design!")
-    print("\n🐛 Debug:")
-    print("   • Open browser console (F12) to see detailed logs")
-    print("   • Check if canvas loaded properly")
-    print("   • See pixel RGB values and heat conversions")
-    
-    print("\n✅ Opening in browser...")
+ 
     webbrowser.open(f'file://{Path(output).absolute()}')
 
 

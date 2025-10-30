@@ -72,7 +72,6 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         
-        /* Critical: Force map container to fill viewport */
         html, body {
             height: 100%;
             width: 100%;
@@ -90,7 +89,6 @@
             z-index: 1;
         }
         
-        /* Let image overlay blend with tiles, not cover them */
         .leaflet-image-layer {
             z-index: 400 !important;
             visibility: visible !important;
@@ -98,7 +96,6 @@
             pointer-events: none !important;
         }
         
-        /* Keep tile layers visible */
         .leaflet-tile-pane {
             z-index: 200 !important;
         }
@@ -107,7 +104,6 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         
-        /* Container for both temp boxes */
         .temp-container {
             position: fixed;
             top: 20px;
@@ -117,7 +113,6 @@
             z-index: 9999;
         }
         
-        /* Persistent temperature display boxes */
         .temp-display {
             background: rgba(10, 10, 15, 0.85);
             backdrop-filter: blur(20px) saturate(180%);
@@ -155,7 +150,6 @@
             margin-top: 4px;
         }
         
-        /* Heat indicator bar for feels-like box */
         .heat-indicator-inline {
             display: flex;
             align-items: center;
@@ -185,7 +179,6 @@
             color: rgba(255, 255, 255, 0.5);
         }
         
-        /* Hide the old tooltip */
         .tooltip-box {
             display: none !important;
         }
@@ -372,7 +365,6 @@
         
     
         
-        // Houston bounds
         const BOUNDS = {
             north: 30.110,
             south: 29.523,
@@ -380,26 +372,22 @@
             west: -95.788
         };
         
-        // Color scale (blue to red) - VIBRANT colors
         const colorScale = [
-            {heat: 0,  r: 0,   g: 150, b: 255},  // #0096ff — electric blue
-            {heat: 2,  r: 0,   g: 200, b: 255},  // #00c8ff — bright cyan
-            {heat: 4,  r: 0,   g: 230, b: 180},  // #00e6b4 — vibrant teal
-            {heat: 6,  r: 150, g: 255, b: 0},    // #96ff00 — electric lime
-            {heat: 8,  r: 255, g: 220, b: 0},    // #ffdc00 — bright yellow
-            {heat: 10, r: 255, g: 60,  b: 60}    // #ff3c3c — vibrant red
+            {heat: 0,  r: 0,   g: 150, b: 255},
+            {heat: 2,  r: 0,   g: 200, b: 255},
+            {heat: 4,  r: 0,   g: 230, b: 180},
+            {heat: 6,  r: 150, g: 255, b: 0},
+            {heat: 8,  r: 255, g: 220, b: 0},
+            {heat: 10, r: 255, g: 60,  b: 60}
         ];
         
-        // Single weather data for Houston
         let currentWeather = null;
         let heatMapImage = null;
         let canvas = null;
         let ctx = null;
         let currentMarker = null;
         
-        // Convert RGB color to heat value (0-10) with interpolation
         function rgbToHeat(r, g, b) {
-            // Find the two closest colors and interpolate
             let minDist1 = Infinity;
             let minDist2 = Infinity;
             let closest1 = colorScale[0];
@@ -423,12 +411,10 @@
                 }
             }
             
-            // If very close to one color, use it
             if (minDist1 < 10) {
                 return closest1.heat;
             }
             
-            // Interpolate between two closest colors
             const totalDist = minDist1 + minDist2;
             if (totalDist === 0) return closest1.heat;
             
@@ -438,7 +424,6 @@
             return closest1.heat * weight1 + closest2.heat * weight2;
         }
         
-        // Get heat value by reading pixel color from image
         function getHeatValueFromImage(lat, lon) {
             if (!canvas || !ctx) {
                 console.error('❌ Canvas not ready - returning default value');
@@ -456,19 +441,15 @@
                 return 5;
             }
             
-            // Convert lat/lon to image pixel coordinates
             const latFrac = (lat - BOUNDS.south) / (BOUNDS.north - BOUNDS.south);
             const lonFrac = (lon - BOUNDS.west) / (BOUNDS.east - BOUNDS.west);
             
-            // Image coordinates (y=0 is top, y=max is bottom)
             const x = Math.floor(lonFrac * canvas.width);
             const y = Math.floor((1 - latFrac) * canvas.height);
             
-            // Bounds check
             const clampedX = Math.max(0, Math.min(canvas.width - 1, x));
             const clampedY = Math.max(0, Math.min(canvas.height - 1, y));
             
-            // Read pixel color
             try {
                 const imageData = ctx.getImageData(clampedX, clampedY, 1, 1);
                 const r = imageData.data[0];
@@ -478,13 +459,11 @@
                 
                 console.log(`Pixel (${clampedX},${clampedY}): RGB(${r},${g},${b},${a})`);
                 
-                // Check if pixel is transparent or black (no data)
                 if (a < 10) {
                     console.log('⚠️ Transparent pixel - no data here');
                     return 5;
                 }
                 
-                // Convert color to heat value
                 const heat = rgbToHeat(r, g, b);
                 console.log(`→ Heat value: ${heat.toFixed(1)}/10`);
                 
@@ -512,10 +491,9 @@
             return baseFeelsLike + heatAdjustment;
         }
         
-        // Fetch weather from Google Weather API (single call)
         async function fetchWeather(lat, lon) {
-            const apiKey = '***REMOVED***';
-            const url = `https://weather.googleapis.com/v1/currentConditions:lookup?location.latitude=${lat}&location.longitude=${lon}&key=${apiKey}`;
+            const proxyUrl = 'https://your-app-name.onrender.com/api/weather';
+            const url = `${proxyUrl}?lat=${lat}&lon=${lon}`;
             
             try {
                 const response = await fetch(url);

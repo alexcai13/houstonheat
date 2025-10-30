@@ -72,7 +72,6 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         
-        /* Critical: Force map container to fill viewport */
         html, body {
             height: 100%;
             width: 100%;
@@ -90,7 +89,6 @@
             z-index: 1;
         }
         
-        /* Let image overlay blend with tiles, not cover them */
         .leaflet-image-layer {
             z-index: 400 !important;
             visibility: visible !important;
@@ -98,7 +96,6 @@
             pointer-events: none !important;
         }
         
-        /* Keep tile layers visible */
         .leaflet-tile-pane {
             z-index: 200 !important;
         }
@@ -107,7 +104,6 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         
-        /* Container for both temp boxes */
         .temp-container {
             position: fixed;
             top: 20px;
@@ -117,7 +113,6 @@
             z-index: 9999;
         }
         
-        /* Persistent temperature display boxes */
         .temp-display {
             background: rgba(10, 10, 15, 0.85);
             backdrop-filter: blur(20px) saturate(180%);
@@ -155,7 +150,6 @@
             margin-top: 4px;
         }
         
-        /* Heat indicator bar for feels-like box */
         .heat-indicator-inline {
             display: flex;
             align-items: center;
@@ -185,12 +179,10 @@
             color: rgba(255, 255, 255, 0.5);
         }
         
-        /* Hide the old tooltip */
         .tooltip-box {
             display: none !important;
         }
         
-        /* Click tooltip - super minimal */
         .tooltip-box {
             position: fixed;
             background: rgba(0, 0, 0, 0.92);
@@ -257,16 +249,13 @@
         }
     </style>
     
-    <!-- Temperature displays - side by side -->
     <div class="temp-container">
-        <!-- Houston current temp -->
         <div class="temp-display">
             <div class="temp-display-label">Houston</div>
             <div class="temp-display-value" id="display-temp">--°</div>
             <div class="temp-display-location">Current temp</div>
         </div>
         
-        <!-- Feels-like at clicked location -->
         <div class="temp-display">
             <div class="temp-display-label">Feels Like</div>
             <div class="temp-display-value" id="feels-temp" style="color: #ffffff;">--°</div>
@@ -372,7 +361,7 @@
         
     
         
-        // Houston bounds
+    
         const BOUNDS = {
             north: 30.110,
             south: 29.523,
@@ -380,7 +369,6 @@
             west: -95.788
         };
         
-        // Color scale (blue to red) - VIBRANT colors
         const colorScale = [
             {heat: 0,  r: 0,   g: 150, b: 255},  // #0096ff — electric blue
             {heat: 2,  r: 0,   g: 200, b: 255},  // #00c8ff — bright cyan
@@ -390,7 +378,6 @@
             {heat: 10, r: 255, g: 60,  b: 60}    // #ff3c3c — vibrant red
         ];
         
-        // Single weather data for Houston
         let currentWeather = null;
         let heatMapImage = null;
         let canvas = null;
@@ -512,10 +499,9 @@
             return baseFeelsLike + heatAdjustment;
         }
         
-        // Fetch weather from Google Weather API (single call)
         async function fetchWeather(lat, lon) {
-            const apiKey = '***REMOVED***';
-            const url = `https://weather.googleapis.com/v1/currentConditions:lookup?location.latitude=${lat}&location.longitude=${lon}&key=${apiKey}`;
+            const proxyUrl = 'https://your-app-name.onrender.com/api/weather';
+            const url = `${proxyUrl}?lat=${lat}&lon=${lon}`;
             
             try {
                 const response = await fetch(url);
