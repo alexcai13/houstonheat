@@ -132,7 +132,7 @@ class ClickTooltipFromImage(MacroElement):
         
 
         async function fetchWeather(lat, lon) {
-            const apiKey = '***REMOVED***';
+            const apiKey = '%%GOOGLE_WEATHER_API_KEY%%';
             const url = `https://weather.googleapis.com/v1/currentConditions:lookup?location.latitude=${lat}&location.longitude=${lon}&key=${apiKey}`;
             
             try {

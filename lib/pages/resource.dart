@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Lightweight in-file models.
 class _ResourceEntry {
   final String name;
   final String description;
@@ -15,7 +14,6 @@ class _CategoryGroup {
   const _CategoryGroup({required this.category, required this.resources});
 }
 
-/// Embedded data converted from provided JSON.
 const List<Map<String, dynamic>> _rawData = [
   {
     "category": "Emergency Resources",
@@ -151,7 +149,6 @@ List<_CategoryGroup> _buildGroups() => _rawData.map((c) => _CategoryGroup(
   )).toList(),
 )).toList();
 
-/// Public page widget to plug into navigation.
 class ResourcesPage extends StatefulWidget {
   const ResourcesPage({super.key});
   @override
@@ -315,15 +312,15 @@ class _SearchBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: Colors.grey[100], // CHANGED: pure grey background
+        color: Colors.grey[100], 
         border: Border.all(
           color: query.isEmpty
-            ? Colors.grey[300]! // CHANGED: grey border
-            : Colors.grey[400]!, // CHANGED: darker grey when focused
+            ? Colors.grey[300]! 
+            : Colors.grey[400]!, 
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(.05), // CHANGED: neutral shadow
+            color: Colors.black.withOpacity(.05),
             blurRadius: 8,
             offset: const Offset(0,4),
           ),
@@ -332,7 +329,7 @@ class _SearchBar extends StatelessWidget {
       child: Row(
         children: [
           Icon(Icons.search_rounded,
-              color: Colors.grey[600]), // CHANGED: grey icon
+              color: Colors.grey[600]), 
           const SizedBox(width: 8),
           Expanded(
             child: TextField(
@@ -342,7 +339,7 @@ class _SearchBar extends StatelessWidget {
                 border: InputBorder.none,
                 isDense: true,
               ),
-              style: TextStyle(color: Colors.grey[800]), // CHANGED: grey text
+              style: TextStyle(color: Colors.grey[800]),
               textInputAction: TextInputAction.search,
             ),
           ),
@@ -355,7 +352,7 @@ class _SearchBar extends StatelessWidget {
                   key: const ValueKey('clr'),
                   icon: Icon(Icons.close_rounded, 
                       size: 18, 
-                      color: Colors.grey[600]), // CHANGED: grey close icon
+                      color: Colors.grey[600]), 
                   splashRadius: 18,
                   onPressed: onClear,
                 ),
@@ -381,11 +378,10 @@ class _CategoryCard extends StatefulWidget {
   State<_CategoryCard> createState() => _CategoryCardState();
 }
 
-const _kAccentGradient = [Color(0xFF42A5F5), Color(0xFF26C6DA)]; // blue -> cyan
-const _kCardBgGradient = [Colors.white, Color(0xFFF9FAFB)];      // uniform light card
-Color _accentColor(BuildContext c) => Theme.of(c).colorScheme.primary; // base accent
+const _kAccentGradient = [Color(0xFF42A5F5), Color(0xFF26C6DA)]; 
+const _kCardBgGradient = [Colors.white, Color(0xFFF9FAFB)];      
+Color _accentColor(BuildContext c) => Theme.of(c).colorScheme.primary; 
 
-// CHANGED: More subtle animations in _CategoryCardState
 class _CategoryCardState extends State<_CategoryCard>
     with TickerProviderStateMixin {
   late final AnimationController _c;
@@ -416,7 +412,7 @@ class _CategoryCardState extends State<_CategoryCard>
   Widget build(BuildContext context) {
     final accent = _accentColor(context);
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 120), // CHANGED: faster
+      duration: const Duration(milliseconds: 120), 
       curve: Curves.easeOut,
       margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
         decoration: BoxDecoration(
@@ -440,19 +436,19 @@ class _CategoryCardState extends State<_CategoryCard>
           children: [
             InkWell(
               onTap: widget.onToggle,
-              splashColor: accent.withOpacity(.04), // CHANGED: much more subtle
-              highlightColor: accent.withOpacity(.02), // CHANGED: much more subtle
+              splashColor: accent.withOpacity(.04), 
+              highlightColor: accent.withOpacity(.02),
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(18, 14, 18, 12),
                 child: Row(
                   children: [
                     AnimatedRotation(
-                      turns: widget.expanded ? .125 : 0.0, // CHANGED: even smaller rotation (45deg)
-                      duration: const Duration(milliseconds: 300), // CHANGED: faster
+                      turns: widget.expanded ? .125 : 0.0, 
+                      duration: const Duration(milliseconds: 300),
                       curve: Curves.easeOut,
                       child: Icon(Icons.keyboard_arrow_down_rounded,
-                          size: 26, // CHANGED: smaller icon
-                          color: Colors.grey[600]), // CHANGED: subtler color
+                          size: 26,
+                          color: Colors.grey[600]),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -466,12 +462,11 @@ class _CategoryCardState extends State<_CategoryCard>
                         ),
                       ),
                     ),
-                    // CHANGED: stable number display - no AnimatedSwitcher
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.grey[200], // CHANGED: consistent grey background
+                        color: Colors.grey[200],
                         borderRadius: BorderRadius.circular(30),
                       ),
                       child: Text(
@@ -479,7 +474,7 @@ class _CategoryCardState extends State<_CategoryCard>
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: Colors.grey[700], // CHANGED: consistent grey text
+                          color: Colors.grey[700],
                         ),
                       ),
                     ),
@@ -488,7 +483,7 @@ class _CategoryCardState extends State<_CategoryCard>
               ),
             ),
             AnimatedSize(
-              duration: const Duration(milliseconds: 140), // CHANGED: faster
+              duration: const Duration(milliseconds: 140),
               curve: Curves.easeOut,
               alignment: Alignment.topCenter,
               child: widget.expanded
@@ -496,7 +491,7 @@ class _CategoryCardState extends State<_CategoryCard>
                       padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
                       child: Column(
                         children: [
-                          Divider(height: 18, color: Colors.grey[200]), // CHANGED: subtler divider
+                          Divider(height: 18, color: Colors.grey[200]), 
                           for (final r in widget.group.resources)
                             _ResourceTile(
                               entry: r,
@@ -530,8 +525,8 @@ class _ResourceTileState extends State<_ResourceTile> {
   Widget build(BuildContext context) {
     final accent = widget.accent;
     return TweenAnimationBuilder<double>(
-      tween: Tween(end: _down ? .985 : 1), // CHANGED: much more subtle scale
-      duration: const Duration(milliseconds: 300), // CHANGED: faster
+      tween: Tween(end: _down ? .985 : 1), 
+      duration: const Duration(milliseconds: 300), 
       curve: Curves.easeOutCubic,
       builder: (_, scale, child) => Transform.scale(scale: scale, child: child),
       child: GestureDetector(
@@ -542,24 +537,24 @@ class _ResourceTileState extends State<_ResourceTile> {
           widget.onOpen(widget.entry.link);
         },
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150), // CHANGED: faster
+          duration: const Duration(milliseconds: 150),
           curve: Curves.easeOutCubic,
           margin: const EdgeInsets.symmetric(vertical: 6),
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            color: Colors.white, // CHANGED: pure white
+            color: Colors.white, 
             border: Border.all(
-              color: accent.withOpacity(_down ? .25 : .15), // CHANGED: more subtle
+              color: accent.withOpacity(_down ? .25 : .15),
               width: 1,
             ),
             boxShadow: _down
                 ? []
                 : [
                     BoxShadow(
-                      color: Colors.black.withOpacity(.02), // CHANGED: much more subtle
-                      blurRadius: 6, // CHANGED: reduced
-                      offset: const Offset(0, 2), // CHANGED: smaller
+                      color: Colors.black.withOpacity(.02), 
+                      blurRadius: 6, 
+                      offset: const Offset(0, 2), 
                     ),
                   ],
           ),

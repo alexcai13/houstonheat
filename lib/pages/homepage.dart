@@ -44,7 +44,7 @@ class WeatherScreen extends StatefulWidget {
   final double lat;
   final double lon;
   final String cityName;
-  final void Function(Map<String, dynamic>)? onWeatherData; 
+  final void Function(Map<String, dynamic>)? onWeatherData;
 
   const WeatherScreen({
     Key? key,
@@ -102,12 +102,11 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
   }
 
   void _startAutoRefresh() {
-    // Refresh every 3 hours
     Future.delayed(Duration(hours: 3), () {
       if (mounted) {
         print('Auto-refreshing weather data...');
         fetchWeatherData();
-        _startAutoRefresh(); // Schedule next refresh
+        _startAutoRefresh();
       }
     });
   }
@@ -142,7 +141,6 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
       _fadeController.forward();
       _slideController.forward();
       
-      // Fetch weather summary after all data is loaded
       _fetchWeatherSummary();
     } catch (e) {
       print('Error fetching weather data: $e');
@@ -223,7 +221,7 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
             "currentTempF": currentTempF,
             "feelsLikeF": feelsLikeF,
             "condition": condition,
-            "city": widget.cityName, 
+            "city": widget.cityName,
           });
         }
       });
@@ -265,10 +263,9 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
             };
           })
           .where((forecast) {
-            // Only include forecasts that are in the future
             return (forecast['dateTime'] as DateTime).isAfter(now);
           })
-          .take(12) // Take only the next 12 future hours
+          .take(12)
           .toList(),
       );
     });
@@ -321,13 +318,9 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
     final textStyle = GoogleFonts.manrope(color: Colors.grey[800]);
 
     return Scaffold(
-      backgroundColor: Colors.white, // Changed to white
-      body: CustomScrollView( // Removed SafeArea wrapper
-        slivers: [
-          // Modern App Bar with white gradient
-          // Replace the SliverAppBar section with this updated version:
-
-          SliverAppBar(
+      backgroundColor: Colors.white,
+      body: CustomScrollView(
+        slivers: [          SliverAppBar(
             expandedHeight: 120,
             floating: false,
             pinned: true,
@@ -340,7 +333,7 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
                   colors: [Colors.blue[50]!, Colors.white],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  stops: [0.0, 1.0], // Ensure smooth transition
+                  stops: [0.0, 1.0],
                 ),
               ),
               child: SafeArea(
@@ -447,10 +440,7 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
               padding: EdgeInsets.all(20),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  // Current Weather Card
-                  // Replace the Current Weather Card section with this updated version:
-
-                  // Current Weather Card
+                  
                   FadeTransition(
                     opacity: _fadeAnimation,
                     child: SlideTransition(
@@ -470,10 +460,9 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
                         ),
                         child: Column(
                           children: [
-                            // Top row with icon, temp, and feels like
+                            
                             Row(
                               children: [
-                                // Weather Icon (Left side)
                                 Container(
                                   width: 80,
                                   height: 80,
@@ -501,7 +490,6 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
                                 
                                 SizedBox(width: 16),
                                 
-                                // Main Temperature Section (Center)
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -520,7 +508,6 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
                                 
                                 SizedBox(width: 16),
                                 
-                                // Feels Like Section (Right side)
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
@@ -538,7 +525,7 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
                                       decoration: BoxDecoration(
                                         color: tempToColor(feelsLikeF ?? 0).withValues(alpha: 0.6),
                                         borderRadius: BorderRadius.circular(16),
-                                        border: Border.all( 
+                                        border: Border.all(
                                           color: tempToColor(feelsLikeF ?? 0).withValues(alpha: 1),
                                           width: 1,
                                         ),
@@ -557,7 +544,6 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
                               ],
                             ),
                             
-                            // Weather Summary below
                             SizedBox(height: 16),
                             Container(
                               padding: EdgeInsets.all(16),
@@ -616,7 +602,6 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
 
                   SizedBox(height: 24),
 
-                  // Hourly Forecast Section
                   if (hourlyForecast.isNotEmpty) ...[
                     Container(
                       padding: EdgeInsets.all(20),
@@ -650,7 +635,6 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
                           
                           SizedBox(height: 16),
                           
-                          // Toggle Buttons
                           Row(
                             children: [
                               Expanded(
@@ -699,7 +683,6 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
                           
                           SizedBox(height: 20),
                           
-                          // Hourly Chart
                           SizedBox(
                             height: 180,
                             child: SingleChildScrollView(
@@ -731,7 +714,6 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
                                       ),
                                     ),
                                     
-                                    // Chart area
                                     Expanded(
                                       child: LayoutBuilder(
                                         builder: (context, constraints) {
@@ -758,7 +740,6 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
 
                                           return Stack(
                                             children: [
-                                              // Draw connecting line
                                               CustomPaint(
                                                 size: Size(hourlyForecast.length * 60.0, chartHeight),
                                                 painter: _CurvedLinePainter(
@@ -771,39 +752,33 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
                                                 ),
                                               ),
                                               for (int i = 0; i < hourlyForecast.length; i++) ...[
-                                                // Weather icon
-                                                // Replace the weather icon section in the hourly chart with this:
-
-                                                // Weather icon
+                                                
                                                 Positioned(
-                                                  left: 60.0 * i + 30.0 - 16, // Adjusted for bigger icon
-                                                  top: getY(temps[i]) - 16, // Adjusted for bigger icon
+                                                  left: 60.0 * i + 30.0 - 16,
+                                                  top: getY(temps[i]) - 16,
                                                   child: Container(
-                                                    width: 32, // Made bigger
-                                                    height: 32, // Made bigger
+                                                    width: 32,
+                                                    height: 32,
                                                     decoration: BoxDecoration(
-                                                      color: Colors.white, // Same as graph/card background
-                                                      // Removed borderRadius - no rounded corners
-                                                      // Removed boxShadow
+                                                      color: Colors.white,
                                                     ),
                                                     child: hourlyForecast[i]['iconBaseUri'] != null
                                                         ? Image.network(
                                                             hourlyForecast[i]['iconBaseUri'] + '.png',
-                                                            width: 28, // Bigger icon
-                                                            height: 28, // Bigger icon
-                                                            fit: BoxFit.contain, // Changed from cover to contain to prevent cutoff
+                                                            width: 28,
+                                                            height: 28,
+                                                            fit: BoxFit.contain,
                                                             errorBuilder: (context, error, stackTrace) => 
                                                                 Icon(getWeatherIcon(hourlyForecast[i]['condition']), 
-                                                                    size: 20, color: Colors.grey[600]), // Bigger fallback icon
+                                                                    size: 20, color: Colors.grey[600]),
                                                           )
                                                         : Icon(getWeatherIcon(hourlyForecast[i]['condition']), 
-                                                              size: 20, color: Colors.grey[600]), // Bigger fallback icon
+                                                              size: 20, color: Colors.grey[600]),
                                                   ),
                                                 ),
-                                                // Temperature label
-                                               Positioned(
+                                                Positioned(
                                                 left: 60.0 * i + 30.0 - 15,
-                                                top: getY(temps[i]) - 50, // Moved up more to account for bigger icon
+                                                top: getY(temps[i]) - 50,
                                                 child: Container(
                                                   padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                                   decoration: BoxDecoration(
@@ -838,7 +813,6 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
                     SizedBox(height: 24),
                   ],
 
-                  // 7-Day Forecast
                   if (dailyForecast.isNotEmpty) ...[
                     Container(
                       padding: EdgeInsets.all(20),
@@ -891,7 +865,7 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
                                 ),
                                 child: Row(
                                   children: [
-                                    // Day and date - Fixed width
+                                    
                                     SizedBox(
                                       width: 80,
                                       child: Column(
@@ -917,15 +891,11 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
                                     
                                     SizedBox(width: 16),
                                     
-                               
-                                    // Weather icon - Fixed position
                                     Container(
                                       width: 48,
                                       height: 48,
                                       decoration: BoxDecoration(
-                                        color: Colors.grey[50], // Exact same as cell background
-                                        // Removed borderRadius to make it square
-                                        // Removed boxShadow
+                                        color: Colors.grey[50],
                                       ),
                                       child: day['iconBaseUri'] != null
                                           ? Image.network(
@@ -943,16 +913,12 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
                                     
                                     SizedBox(width: 16),
                                     
-                                    // Precipitation - Fixed width space
-                                    // Replace the precipitation section in the 7-day forecast with this:
-
-                                    // Precipitation - Fixed width space
                                     SizedBox(
-                                      width: 72, // Slightly wider to accommodate 100% without overflow
+                                      width: 72,
                                       child: Container(
                                         padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                         decoration: BoxDecoration(
-                                          color: precipChance > 0 ? Colors.blue[50] : Colors.orange[50], // Different color for 0%
+                                          color: precipChance > 0 ? Colors.blue[50] : Colors.orange[50],
                                           borderRadius: BorderRadius.circular(8),
                                         ),
                                         child: Row(
@@ -960,10 +926,10 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
                                           children: [
                                             Icon(
                                               precipChance > 0 
-                                                  ? getPrecipitationIcon(day['condition']) // Use dynamic icon for precipitation
-                                                  : Icons.wb_sunny, // Sunny icon for 0%
+                                                  ? getPrecipitationIcon(day['condition'])
+                                                  : Icons.wb_sunny,
                                               size: 14, 
-                                              color: precipChance > 0 ? Colors.blue[600] : Colors.orange[600], // Different colors
+                                              color: precipChance > 0 ? Colors.blue[600] : Colors.orange[600],
                                             ),
                                             SizedBox(width: 4),
                                             Text(
@@ -979,10 +945,8 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
                                       ),
                                     ),
                                     
-                                    // Spacer to push temperatures to the right
                                     Spacer(),
                                     
-                                    // High/Low temps - Fixed position on the right
                                     Column(
                                       crossAxisAlignment: CrossAxisAlignment.end,
                                       children: [
@@ -1013,7 +977,6 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
                     ),
                   ],
                   
-                  // Bottom padding for safe area
                   SizedBox(height: 20),
                 ]),
               ),
@@ -1025,7 +988,6 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
   }
 }
 
-// Updated curved line painter
 class _CurvedLinePainter extends CustomPainter {
   final List<Offset> points;
   final bool showActualTemp;
@@ -1043,7 +1005,6 @@ class _CurvedLinePainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    // Just draw straight lines between each point
     for (int i = 0; i < points.length - 1; i++) {
       canvas.drawLine(points[i], points[i + 1], paint);
     }

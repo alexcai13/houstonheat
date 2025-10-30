@@ -99,10 +99,8 @@ class _HomePageState extends State<HomePage> {
           setState(() {
             if (index == 4) {
               if (_selectedIndex != 4) {
-                // First time tapping chat or coming from another tab
                 _showChatSelector = true;
               } else {
-                // Already in chat, toggle between selector and current chat
                 _showChatSelector = !_showChatSelector;
               }
             }

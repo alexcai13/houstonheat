@@ -56,7 +56,7 @@ class _HeatMapPageState extends State<HeatMapPage> {
             setState(() {
               isLoading = false;
             });
-            // Check console logs from the web page
+            
             _checkWebViewConsole();
           },
           onWebResourceError: (WebResourceError error) {
@@ -71,7 +71,6 @@ class _HeatMapPageState extends State<HeatMapPage> {
         print('🌐 JS Console [${message.level.name}]: ${message.message}');
       });
 
-    // Load from GitHub Pages
     try {
       await controller.loadRequest(
         Uri.parse('https://alexcai13.github.io/houstonheat/'),
@@ -84,7 +83,6 @@ class _HeatMapPageState extends State<HeatMapPage> {
   }
 
   void _checkWebViewConsole() {
-    // Run JavaScript to check if image loaded
     controller.runJavaScript('''
       console.log('=== WebView Debug Info ===');
       console.log('Canvas exists:', !!canvas);
@@ -176,7 +174,6 @@ class _HeatMapPageState extends State<HeatMapPage> {
                 
                 SizedBox(height: 20),
                 
-                // Got it button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -213,7 +210,7 @@ class _HeatMapPageState extends State<HeatMapPage> {
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          // Custom AppBar with gradient
+         
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -230,13 +227,13 @@ class _HeatMapPageState extends State<HeatMapPage> {
                 padding: EdgeInsets.symmetric(horizontal: 8),
                 child: Row(
                   children: [
-                    // Info button on the left
+                    
                     IconButton(
                       icon: const Icon(Icons.info_outline, color: Colors.grey),
                       onPressed: _showInfoDialog,
                       tooltip: 'About Heat Map',
                     ),
-                    // Title in the center
+
                     Expanded(
                       child: Center(
                         child: Text(
@@ -251,7 +248,7 @@ class _HeatMapPageState extends State<HeatMapPage> {
                         ),
                       ),
                     ),
-                    // Refresh button on the right
+                    
                     IconButton(
                       icon: const Icon(Icons.refresh, color: Colors.grey),
                       onPressed: () {
@@ -264,7 +261,7 @@ class _HeatMapPageState extends State<HeatMapPage> {
               ),
             ),
           ),
-          // WebView takes remaining space
+          
           Expanded(
             child: Stack(
               children: [

@@ -1,8 +1,3 @@
-"""
-Create full resolution heat map overlay for browser
-Uses 5120x5120 pixel PNG with exact coordinate mapping
-"""
-
 import numpy as np
 from pathlib import Path
 import folium
@@ -15,32 +10,19 @@ import base64
 
 
 def create_heatmap_image(data, output_path='fullres_heatmap.png'):
-    """
-    Create 5120x5120 PNG with proper colors
-    """
     print(f"Creating full resolution image: {data.shape}")
     
-    # Create custom colormap (blue -> cyan -> green -> yellow -> orange -> red)
     colors = ['#0000FF', '#00CCFF', '#00FF99', '#FFFF00', '#FF9900', '#FF0000']
     n_bins = 256
     cmap = LinearSegmentedColormap.from_list('heat', colors, N=n_bins)
     
-    # Normalize data to 0-1 range
-    normalized = data / 10.0  # Since data is 0-10
-    
-    # Apply colormap
+    normalized = data / 10.0
     colored = cmap(normalized)
-    
-    # Convert to 8-bit RGBA
     img_data = (colored * 255).astype(np.uint8)
-    
-    # Create PIL Image
     img = Image.fromarray(img_data, mode='RGBA')
     
-    # Set alpha based on heat intensity (more transparent for low values)
     alpha = img_data[:, :, 3].copy()
-    # Make low heat values more transparent
-    heat_alpha = (normalized * 200 + 55).astype(np.uint8)  # Range: 55-255
+    heat_alpha = (normalized * 200 + 55).astype(np.uint8)
     img_data[:, :, 3] = heat_alpha
     
     img = Image.fromarray(img_data, mode='RGBA')
@@ -53,10 +35,6 @@ def create_heatmap_image(data, output_path='fullres_heatmap.png'):
 
 
 def calculate_proper_bounds(data_shape):
-    """
-    Calculate the EXACT bounds for the overlay
-    Each pixel represents a specific location in the grid
-    """
     HOUSTON_BOUNDS = {
         'north': 30.110,
         'south': 29.523,
@@ -68,28 +46,15 @@ def calculate_proper_bounds(data_shape):
     grid_cols = 40
     detail_per_box = 128
     
-    # Total grid dimensions
-    total_rows = grid_rows * detail_per_box  # 5120
-    total_cols = grid_cols * detail_per_box  # 5120
+    total_rows = grid_rows * detail_per_box
+    total_cols = grid_cols * detail_per_box
     
-    # Each pixel represents a cell in the grid
     lat_per_pixel = (HOUSTON_BOUNDS['north'] - HOUSTON_BOUNDS['south']) / total_rows
     lon_per_pixel = (HOUSTON_BOUNDS['east'] - HOUSTON_BOUNDS['west']) / total_cols
     
-    # Image coordinates:
-    # - Row 0 (top of image) = North
-    # - Row 5119 (bottom of image) = South
-    # - Col 0 (left of image) = West
-    # - Col 5119 (right of image) = East
-    
-    # The IMAGE represents pixels at the CENTER of each cell
-    # So pixel [0, 0] represents the center of the first cell (northwest corner)
-    
-    # Bounds for ImageOverlay should be the EDGES
-    # But we need to account for half-pixel offset
     bounds = [
-        [HOUSTON_BOUNDS['south'], HOUSTON_BOUNDS['west']],  # Southwest corner
-        [HOUSTON_BOUNDS['north'], HOUSTON_BOUNDS['east']]   # Northeast corner
+        [HOUSTON_BOUNDS['south'], HOUSTON_BOUNDS['west']],
+        [HOUSTON_BOUNDS['north'], HOUSTON_BOUNDS['east']]
     ]
     
     info = {
@@ -109,9 +74,6 @@ def calculate_proper_bounds(data_shape):
 
 
 def create_fullres_map(image_path, data, output_html='houston_fullres.html'):
-    """
-    Create map with full resolution overlay
-    """
     print("\nCreating full resolution map...")
     
     bounds, info = calculate_proper_bounds(data.shape)
@@ -120,7 +82,6 @@ def create_fullres_map(image_path, data, output_html='houston_fullres.html'):
     print(f"Resolution: {info['lat_per_pixel']:.8f}° lat/pixel, {info['lon_per_pixel']:.8f}° lon/pixel")
     print(f"Geographic span: {info['geographic_span']['lat_km']:.1f}km x {info['geographic_span']['lon_km']:.1f}km")
     
-    # Downtown Houston
     downtown = [29.7547, -95.3555]
     
     m = folium.Map(
@@ -130,7 +91,6 @@ def create_fullres_map(image_path, data, output_html='houston_fullres.html'):
         max_zoom=18
     )
     
-    # Satellite base layer
     folium.TileLayer(
         tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
         attr='Esri',
@@ -139,7 +99,6 @@ def create_fullres_map(image_path, data, output_html='houston_fullres.html'):
         control=True
     ).add_to(m)
     
-    # Street map layer
     folium.TileLayer(
         tiles='OpenStreetMap',
         name='Street Map',
@@ -147,7 +106,6 @@ def create_fullres_map(image_path, data, output_html='houston_fullres.html'):
         control=True
     ).add_to(m)
     
-    # Add the full resolution heat map overlay
     print("Adding full resolution overlay...")
     image_layer = folium.raster_layers.ImageOverlay(
         image=image_path,
@@ -160,7 +118,6 @@ def create_fullres_map(image_path, data, output_html='houston_fullres.html'):
     )
     image_layer.add_to(m)
     
-    # Add opacity control slider
     opacity_control = '''
     <div id="opacity-control" style="position: fixed; 
                 top: 80px; right: 10px; width: 200px;
@@ -182,7 +139,6 @@ def create_fullres_map(image_path, data, output_html='houston_fullres.html'):
             var opacity = this.value / 100;
             valueDisplay.textContent = this.value;
             
-            // Find the image overlay element
             var images = document.querySelectorAll('.leaflet-image-layer');
             images.forEach(function(img) {
                 img.style.opacity = opacity;
@@ -192,7 +148,6 @@ def create_fullres_map(image_path, data, output_html='houston_fullres.html'):
     '''
     m.get_root().html.add_child(folium.Element(opacity_control))
     
-    # Add landmarks for verification
     landmarks = [
         ([29.7547, -95.3555], 'Downtown Houston', 'red'),
         ([29.7174, -95.4018], 'Rice University', 'blue'),
@@ -216,7 +171,6 @@ def create_fullres_map(image_path, data, output_html='houston_fullres.html'):
             weight=2
         ).add_to(m)
     
-    # Calculate statistics
     stats = {
         'min': float(np.min(data)),
         'max': float(np.max(data)),
@@ -225,7 +179,6 @@ def create_fullres_map(image_path, data, output_html='houston_fullres.html'):
         'total_pixels': data.size
     }
     
-    # Distribution
     hist, _ = np.histogram(data, bins=[0, 2, 4, 6, 8, 10])
     dist = {
         'very_cool': hist[0] / data.size * 100,
@@ -235,7 +188,6 @@ def create_fullres_map(image_path, data, output_html='houston_fullres.html'):
         'hot': hist[4] / data.size * 100,
     }
     
-    # Legend
     legend_html = f'''
     <div style="position: fixed; 
                 bottom: 50px; right: 50px; width: 300px; 
@@ -280,7 +232,6 @@ def create_fullres_map(image_path, data, output_html='houston_fullres.html'):
     '''
     m.get_root().html.add_child(folium.Element(legend_html))
     
-    # Title
     title_html = '''
     <div style="position: fixed; 
                 top: 10px; left: 50px; width: 600px; 
@@ -304,9 +255,6 @@ def create_fullres_map(image_path, data, output_html='houston_fullres.html'):
 
 
 def verify_alignment(data):
-    """
-    Check where downtown Houston appears in the image
-    """
     print("\n🔍 Verifying alignment...")
     
     HOUSTON_BOUNDS = {
@@ -323,25 +271,21 @@ def verify_alignment(data):
     total_rows = 5120
     total_cols = 5120
     
-    # Normalize downtown position
     lat_fraction = (downtown_lat - HOUSTON_BOUNDS['south']) / (HOUSTON_BOUNDS['north'] - HOUSTON_BOUNDS['south'])
     lon_fraction = (downtown_lon - HOUSTON_BOUNDS['west']) / (HOUSTON_BOUNDS['east'] - HOUSTON_BOUNDS['west'])
     
     downtown_row = int(lat_fraction * total_rows)
     downtown_col = int(lon_fraction * total_cols)
     
-    # Get heat value at downtown
     downtown_heat = data[downtown_row, downtown_col]
     
     print(f"✅ Downtown Houston (29.7547, -95.3555):")
     print(f"   Image pixel: [{downtown_row}, {downtown_col}]")
     print(f"   Heat value: {downtown_heat:.2f}")
     
-    # Check center
     center_row, center_col = 2560, 2560
     center_heat = data[center_row, center_col]
     
-    # Calculate what coordinate the center represents
     center_lat = HOUSTON_BOUNDS['south'] + (center_row / total_rows) * (HOUSTON_BOUNDS['north'] - HOUSTON_BOUNDS['south'])
     center_lon = HOUSTON_BOUNDS['west'] + (center_col / total_cols) * (HOUSTON_BOUNDS['east'] - HOUSTON_BOUNDS['west'])
     
@@ -359,14 +303,11 @@ def verify_alignment(data):
 
 
 def main():
-    """Main execution"""
     print("Houston Heat Map - FULL RESOLUTION Browser Visualization")
     print("=" * 70)
     
-    # Load data - use FIXED ASSEMBLY version
     npy_file = 'houston_extreme_highres_FIXED_ASSEMBLY.npy'
     if not Path(npy_file).exists():
-        # Fall back to original
         npy_file = 'houston_extreme_highres_20251017_191232_enhanced.npy'
         print(f"⚠️  Using original file (not fixed): {npy_file}")
     else:
@@ -381,17 +322,13 @@ def main():
     print(f"   Range: {np.min(data):.2f} - {np.max(data):.2f}")
     print(f"   Mean: {np.mean(data):.2f} ± {np.std(data):.2f}")
     
-    # Data is now correctly assembled with north at top
     print("\n✅ Using data as-is (already correctly assembled)")
     
-    # Verify alignment
     alignment_info = verify_alignment(data)
     
-    # Create full resolution image (temp file)
     print("\n📸 Creating full resolution PNG...")
     image_path = 'temp_fullres.png'
     
-    # Create image efficiently
     from matplotlib import pyplot as plt
     from matplotlib.colors import LinearSegmentedColormap
     
@@ -405,10 +342,8 @@ def main():
     plt.close()
     print(f"✅ Saved: {image_path}")
     
-    # Create interactive map
     map_path = create_fullres_map(image_path, data)
     
-    # Clean up temp file
     Path(image_path).unlink(missing_ok=True)
     print(f"🗑️  Deleted temp file: {image_path}")
     
@@ -422,7 +357,6 @@ def main():
     print(f"   • Image: {image_path}")
     print(f"   • Map: {map_path}")
     
-    # Open in browser
     webbrowser.open('file://' + str(Path(map_path).absolute()))
     print(f"\n✅ Opening in browser...")
     print(f"\n💡 Zoom in to see individual streets and buildings!")

@@ -74,20 +74,17 @@ class _ChatSelectorPageState extends State<ChatSelectorPage>
             backgroundColor: Colors.white,
             iconTheme: IconThemeData(color: Colors.black),
             automaticallyImplyLeading: false,
-            title: null, // We'll handle title in flexibleSpace
+            title: null,
             flexibleSpace: LayoutBuilder(
               builder: (context, constraints) {
-                // Calculate how much the app bar is collapsed
                 final double appBarHeight = constraints.biggest.height;
                 final double collapsedHeight = kToolbarHeight + MediaQuery.of(context).padding.top;
                 final double expandedHeight = 200 + MediaQuery.of(context).padding.top;
                 
-                // Calculate collapse progress (0.0 = fully expanded, 1.0 = fully collapsed)
                 final double collapseProgress = ((expandedHeight - appBarHeight) / (expandedHeight - collapsedHeight)).clamp(0.0, 1.0);
                 
-                // Calculate dynamic font sizes
-                final double titleFontSize = 32 - (collapseProgress * 14); // From 32 to 18
-                final double subtitleFontSize = 16 - (collapseProgress * 4); // From 16 to 12
+                final double titleFontSize = 32 - (collapseProgress * 14);
+                final double subtitleFontSize = 16 - (collapseProgress * 4);
                 
                 return Container(
                   decoration: BoxDecoration(
@@ -102,10 +99,10 @@ class _ChatSelectorPageState extends State<ChatSelectorPage>
                       position: _headerSlideAnimation,
                       child: FadeTransition(
                         opacity: _headerFadeAnimation,
-                        child: Padding(
+                          child: Padding(
                           padding: EdgeInsets.symmetric(
                             horizontal: 24,
-                            vertical: collapseProgress > 0.5 ? 8 : 32, // Less padding when collapsed
+                            vertical: collapseProgress > 0.5 ? 8 : 32,
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -118,7 +115,7 @@ class _ChatSelectorPageState extends State<ChatSelectorPage>
                                   child: Text(
                                     'Your Chats',
                                     style: TextStyle(
-                                      fontSize: titleFontSize.clamp(18.0, 32.0), // Ensure it doesn't go below 18
+                                      fontSize: titleFontSize.clamp(18.0, 32.0),
                                       fontWeight: FontWeight.bold,
                                       color: Colors.grey[800],
                                       height: 1.1,
@@ -126,9 +123,8 @@ class _ChatSelectorPageState extends State<ChatSelectorPage>
                                   ),
                                 ),
                               ),
-                              // Only show subtitle when not too collapsed
                               if (collapseProgress < 0.8) ...[
-                                SizedBox(height: 8 * (1 - collapseProgress)), // Dynamic spacing
+                                SizedBox(height: 8 * (1 - collapseProgress)),
                                 Opacity(
                                   opacity: (1 - collapseProgress).clamp(0.0, 1.0),
                                   child: Text(
@@ -258,14 +254,12 @@ class _ChatSelectorPageState extends State<ChatSelectorPage>
         chatHistories: widget.chatHistories,
         currentChatIndex: widget.chatHistories.isEmpty ? -1 : widget.chatHistories.indexOf(widget.chatHistories.last),
         onUpdateChats: (updatedChats) {
-          // Handle chat updates from the drawer
           setState(() {
             widget.chatHistories.clear();
             widget.chatHistories.addAll(updatedChats);
           });
         },
         onSwitchChat: (index) {
-          // Handle chat switch from the drawer
           widget.onSelectChat(widget.chatHistories, index);
         },
       ),
@@ -273,7 +267,6 @@ class _ChatSelectorPageState extends State<ChatSelectorPage>
   }
 }
 
-// Animated Chat Card Component
 class AnimatedChatCard extends StatefulWidget {
   final Map<String, dynamic> chat;
   final int index;
@@ -400,7 +393,7 @@ class _AnimatedChatCardState extends State<AnimatedChatCard>
                                 color: Colors.grey[800],
                                 height: 1.2,
                               ),
-                              maxLines: 2, // Allow 2 lines for longer titles
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
                             SizedBox(height: 12),
@@ -441,7 +434,6 @@ class _AnimatedChatCardState extends State<AnimatedChatCard>
   }
 }
 
-// Modern Drawer Component
 class ModernDrawer extends StatelessWidget {
   final List<Map<String, dynamic>> chatHistories;
   final int currentChatIndex;
@@ -490,7 +482,6 @@ class ModernDrawer extends StatelessWidget {
               ),
             ),
             
-            // Go to Homepage
             Container(
               margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: Material(
@@ -513,14 +504,13 @@ class ModernDrawer extends StatelessWidget {
                     ),
                   ),
                   onTap: () {
-                    Navigator.pop(context); // Close drawer
-                    Navigator.pop(context); // Go back to chat homepage
+                    Navigator.pop(context);
+                    Navigator.pop(context);
                   },
                 ),
               ),
             ),
 
-            // Start New Chat
             Container(
               margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: Material(
@@ -562,7 +552,6 @@ class ModernDrawer extends StatelessWidget {
 
             Divider(indent: 16, endIndent: 16),
             
-            // Previous Chats Section
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
               child: Row(
@@ -658,7 +647,6 @@ class ModernDrawer extends StatelessWidget {
             
             Divider(indent: 16, endIndent: 16),
             
-            // Other navigation options
             ListTile(
               leading: Container(
                 padding: EdgeInsets.all(8),

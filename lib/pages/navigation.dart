@@ -36,8 +36,8 @@ class _NavigationPageState extends State<NavigationPage> {
   MapBoxNavigationViewController? _controller;
 
   GoogleMapController? _previewMapController; 
-  CameraPosition? _previewCameraPosition;    // NEW
-  Set<Marker> _previewMarkers = const {};    // NEW
+  CameraPosition? _previewCameraPosition;    
+  Set<Marker> _previewMarkers = const {};    
 
   NavigationMode _currentMode = NavigationMode.preview;
   Position? _currentLocation;
@@ -46,7 +46,7 @@ class _NavigationPageState extends State<NavigationPage> {
   double? _durationRemaining;
   String? _nextManeuver;
   
-  TransportationMode _selectedMode = TransportationMode.driving; // Default to driving
+  TransportationMode _selectedMode = TransportationMode.driving; 
 
   @override
   void initState() {
@@ -176,7 +176,6 @@ class _NavigationPageState extends State<NavigationPage> {
         _currentLocation = await _getCurrentLocation();
       }
 
-      // CHANGED: Updated options for actual navigation
       _options = MapBoxOptions(
         initialLatitude: _currentLocation!.latitude,
         initialLongitude: _currentLocation!.longitude,
@@ -209,13 +208,11 @@ class _NavigationPageState extends State<NavigationPage> {
         ),
       ];
 
-      // CHANGED: Start navigation and immediately switch to navigation mode
       await _directions!.startNavigation(
         wayPoints: wayPoints,
         options: _options!,
       );
 
-      // CHANGED: Set to navigating mode immediately after starting
       if (mounted) {
         setState(() {
           _currentMode = NavigationMode.navigating;
@@ -404,10 +401,8 @@ class _NavigationPageState extends State<NavigationPage> {
       body: Column(
         children: [
           const SizedBox(height: 12),
-          // Transportation selector BELOW the AppBar
           _buildTransportationModeSelector(),
           const SizedBox(height: 8),
-          // Map takes remaining space
           Expanded(
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -447,7 +442,6 @@ class _NavigationPageState extends State<NavigationPage> {
               height: 54,
               child: ElevatedButton(
                 onPressed: () async {
-                  // CHANGED: Show loading state while starting navigation
                   setState(() {
                     _instruction = 'Starting navigation...';
                   });
@@ -480,7 +474,6 @@ class _NavigationPageState extends State<NavigationPage> {
     return Scaffold(
       body: Stack(
         children: [
-          // Full-screen map
           if (_options != null)
             MapBoxNavigationView(
               options: _options!,

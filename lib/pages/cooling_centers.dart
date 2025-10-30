@@ -129,7 +129,6 @@ class CoolingCentersService {
   }
 }
 
-// -------------------- ANIMATED WIDGETS --------------------
 class AnimatedCenterCard extends StatefulWidget {
   final OpenCenter center;
   final int index;
@@ -194,10 +193,8 @@ class _AnimatedCenterCardState extends State<AnimatedCenterCard>
     super.dispose();
   }
 
-  // Add method to handle navigation
   Future<void> _navigateToCenter() async {
     try {
-      // Get current location for navigation
       Position? currentLocation;
       try {
         currentLocation = await _getCurrentLocation();
@@ -205,7 +202,6 @@ class _AnimatedCenterCardState extends State<AnimatedCenterCard>
         print('Could not get current location: $e');
       }
 
-      // Create center data map for navigation
       final centerData = {
         'name': widget.center.name,
         'address': widget.center.address,
@@ -214,7 +210,6 @@ class _AnimatedCenterCardState extends State<AnimatedCenterCard>
         'window': widget.center.window,
       };
 
-      // Navigate to navigation page
       if (mounted) {
         Navigator.push(
           context,
@@ -227,7 +222,6 @@ class _AnimatedCenterCardState extends State<AnimatedCenterCard>
         );
       }
     } catch (e) {
-      // Show error if navigation fails
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -252,13 +246,13 @@ class _AnimatedCenterCardState extends State<AnimatedCenterCard>
             margin: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Material(
               elevation: 8,
-              shadowColor: Colors.black.withValues(alpha: 0.15), // Fixed: Use withValues
+              shadowColor: Colors.black.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(20),
               child: InkWell(
                 onTap: _navigateToCenter,
                 borderRadius: BorderRadius.circular(20),
-                splashColor: Colors.blue.withValues(alpha: 0.1), // Fixed: Use withValues
-                highlightColor: Colors.blue.withValues(alpha: 0.05), // Fixed: Use withValues
+                splashColor: Colors.blue.withValues(alpha: 0.1),
+                highlightColor: Colors.blue.withValues(alpha: 0.05),
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
@@ -286,7 +280,7 @@ class _AnimatedCenterCardState extends State<AnimatedCenterCard>
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.blue.withValues(alpha: 0.3), // Fixed: Use withValues
+                                  color: Colors.blue.withValues(alpha: 0.3),
                                   blurRadius: 12,
                                   offset: Offset(0, 4),
                                 ),
@@ -353,7 +347,6 @@ class _AnimatedCenterCardState extends State<AnimatedCenterCard>
                                       ),
                                     ),
                                   ),
-                                  // Keep only the navigation icon - REMOVED distance display
                                   Icon(
                                     Icons.navigation,
                                     size: 20,
@@ -514,7 +507,6 @@ class _CoolingCentersPageState extends State<CoolingCentersPage>
 
   Future<List<OpenCenter>> _getAllOpenCentersByDistance() async {
     try {
-      // Get user location
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
@@ -524,14 +516,12 @@ class _CoolingCentersPageState extends State<CoolingCentersPage>
       final userLat = position.latitude;
       final userLon = position.longitude;
 
-      // Load and parse CSV
       final csvText = await rootBundle.loadString('assets/Houston_Cooling_Centers.csv');
       final openCenters = _service.openNowFromCsv(
         csvText,
         now: _mockNow,
       );
 
-      // Calculate distances for all open centers
       for (var center in openCenters) {
         if (center.lat != null && center.lon != null) {
           center.distance = _haversine(userLat, userLon, center.lat!, center.lon!);
@@ -540,11 +530,9 @@ class _CoolingCentersPageState extends State<CoolingCentersPage>
         }
       }
 
-      // Sort by distance (closest first) and return ALL open centers
       openCenters.sort((a, b) => (a.distance ?? double.infinity).compareTo(b.distance ?? double.infinity));
       return openCenters;
     } catch (e) {
-      // If location fails, still get open centers but without distance sorting
       final csvText = await rootBundle.loadString('assets/Houston_Cooling_Centers.csv');
       return _service.openNowFromCsv(
         csvText,
@@ -579,7 +567,6 @@ class _CoolingCentersPageState extends State<CoolingCentersPage>
     _futureOpenCenters = _getAllOpenCentersByDistance();
     _headerController.forward();
 
-    // Add search listener
     _searchController.addListener(_onSearchChanged);
   }
 
@@ -692,7 +679,6 @@ class _CoolingCentersPageState extends State<CoolingCentersPage>
     );
   }
 
-  // Add method to show help dialog
   void _showHelpDialog() {
     showDialog(
       context: context,
@@ -759,11 +745,9 @@ class _CoolingCentersPageState extends State<CoolingCentersPage>
                 
                 SizedBox(height: 24),
                 
-                // Instructions list
                 ..._buildInstructionsList(),
 
                 
-                // Got it button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -827,7 +811,7 @@ class _CoolingCentersPageState extends State<CoolingCentersPage>
       return Container(
         margin: EdgeInsets.only(bottom: 16),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center, // Changed from start to center
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
               padding: EdgeInsets.all(8),
@@ -845,7 +829,7 @@ class _CoolingCentersPageState extends State<CoolingCentersPage>
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center, // Center the text column
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     instruction['title'] as String,
@@ -892,7 +876,7 @@ class _CoolingCentersPageState extends State<CoolingCentersPage>
                   colors: [Colors.blue[50]!, Colors.white],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  stops: [0.0, 1.0], // Ensure smooth transition
+                  stops: [0.0, 1.0],
                 ),
               ),
               child: SafeArea(
@@ -1000,7 +984,6 @@ class _CoolingCentersPageState extends State<CoolingCentersPage>
                     ),
                   );
                 } else {
-                  // Initialize centers lists when data is loaded
                   if (_allCenters.isEmpty) {
                     _allCenters = snapshot.data!;
                     _filteredCenters = List.from(_allCenters);
@@ -1012,7 +995,6 @@ class _CoolingCentersPageState extends State<CoolingCentersPage>
                     children: [
                       SizedBox(height: 16),
                       
-                      // Updated header with help button on the right
                       if (snapshot.data!.isNotEmpty)
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 24),
@@ -1032,12 +1014,11 @@ class _CoolingCentersPageState extends State<CoolingCentersPage>
                                   ),
                                 ),
                               ),
-                              // Help button moved to the right with no background
                               GestureDetector(
                                 onTap: _showHelpDialog,
                                 child: Icon(
                                   Icons.help_outline,
-                                  size: 24, // Made bigger
+                                  size: 24,
                                   color: Colors.blue[600],
                                 ),
                               ),
@@ -1045,10 +1026,8 @@ class _CoolingCentersPageState extends State<CoolingCentersPage>
                           ),
                         ),
                       
-                      // Clean search bar
                       _buildSearchBar(),
                       
-                      // Show filtered centers or no results message
                       if (centersToShow.isEmpty && _searchController.text.isNotEmpty)
                         Container(
                           height: 200,
@@ -1125,7 +1104,6 @@ class _ToggleHeaderDelegate extends SliverPersistentHeaderDelegate {
   }
 }
 
-// For geolocation:
 Future<Position> _getCurrentLocation() async {
   return await Geolocator.getCurrentPosition(
     locationSettings: const LocationSettings(
