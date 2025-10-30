@@ -1,0 +1,9 @@
+# Exclude generated/docs files from language stats
+docs/* linguist-documentation
+heatmap/*.html linguist-documentation
+heatmap/*.py linguist-vendored=false
+
+# Mark primary languages
+*.dart linguist-detectable=true
+*.py linguist-detectable=true
+*.js linguist-detectable=true
