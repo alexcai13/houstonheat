@@ -30,7 +30,6 @@ app.get('/api/weather', async (req, res) => {
   const url = `https://weather.googleapis.com/v1/currentConditions:lookup?location.latitude=${lat}&location.longitude=${lon}&key=${apiKey}`;
 
   try {
-    const fetch = (await import('node-fetch')).default;
     const response = await fetch(url);
     const data = await response.json();
     
