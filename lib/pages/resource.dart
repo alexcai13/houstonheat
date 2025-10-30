@@ -386,18 +386,15 @@ class _CategoryCardState extends State<_CategoryCard>
     with TickerProviderStateMixin {
   late final AnimationController _c;
   late final Animation<double> _fade;
+  
   @override
   void initState() {
     super.initState();
-    @override
-  void initState() {
-    super.initState();
-    _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 3000));
-    _c.repeat();
-  }
+    _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 260));
     _fade = CurvedAnimation(parent: _c, curve: Curves.easeOut);
     if (widget.expanded) _c.value = 1;
   }
+  
   @override
   void didUpdateWidget(covariant _CategoryCard old) {
     super.didUpdateWidget(old);
