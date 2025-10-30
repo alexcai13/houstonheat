@@ -128,7 +128,6 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
         }
       }
     } catch (e) {
-      print('Error in chat: $e');
       final chatsWithError = List<Map<String, dynamic>>.from(updatedChats);
       setState(() {
         chatsWithError[widget.chatIndex]['messages'].add({

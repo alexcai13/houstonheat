@@ -64,8 +64,6 @@ flutter run
 
 ## Contact
 
-Created by Alex Cai - [GitHub](https://github.com/alexcai13), Adi Kejriwal - [GitHub](https://github.com/A-person1243), and Samit Rath - [GitHub](https://github.com/g4ek) for the Congressional App Challenge 2025
+Created by [Alex Cai](https://github.com/alexcai13), [Adi Kejriwal](https://github.com/A-person1243), and [Samit Rath](https://github.com/g4ek) for the Congressional App Challenge 2025.
 
 ---
-
-**Made with ❤️ for Houston's heat resilience**

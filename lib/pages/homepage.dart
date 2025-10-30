@@ -72,7 +72,7 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
   String? weatherSummary;
   bool isLoadingSummary = false;
   DateTime? lastRefreshTime;
-  final ChatGPTService _chatService = ChatGPTService('***REMOVED***');
+  late final ChatGPTService _chatService;
   
   late AnimationController _fadeController;
   late AnimationController _slideController;
@@ -82,6 +82,7 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
   @override
   void initState() {
     super.initState();
+    _chatService = ChatGPTService(dotenv.env['GROQ_API_KEY'] ?? '');
     _fadeController = AnimationController(
       duration: Duration(milliseconds: 800),
       vsync: this,

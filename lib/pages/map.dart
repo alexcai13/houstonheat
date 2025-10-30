@@ -74,7 +74,7 @@ class _HeatMapPageState extends State<HeatMapPage> {
     // Load from GitHub Pages
     try {
       await controller.loadRequest(
-        Uri.parse('https://alexcai13.github.io/congressionalapp/'),
+        Uri.parse('https://alexcai13.github.io/houstonheat/'),
       );
       
       print('✅ Heat map loaded from GitHub Pages');

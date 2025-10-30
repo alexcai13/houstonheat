@@ -47,19 +47,12 @@ class ChatGPTService {
       "top_p": 0.9,      // Add this to encourage focused responses
     });
 
-    print('Making chat API request...');
-    print('Request body: $body');
-    
     final response = await http.post(url, headers: headers, body: body);
 
-    print('Chat API response status: ${response.statusCode}');
-    
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      print('Chat response received successfully');
       return data['choices'][0]['message']['content'].trim();
     } else {
-      print('Chat API error body: ${response.body}');
       throw Exception('Failed to get response: ${response.body}');
     }
   }
