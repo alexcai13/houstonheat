@@ -1,20 +1,12 @@
-const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
+// Vercel Serverless Function - Weather Proxy
+// No cold starts! Responds instantly.
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+export default async function handler(req, res) {
+  // Only allow GET requests
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
-app.use(cors({
-  origin: ['https://alexcai13.github.io', 'http://localhost:8000'],
-  methods: ['GET']
-}));
-
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-app.get('/api/weather', async (req, res) => {
   const { lat, lon } = req.query;
   
   if (!lat || !lon) {
@@ -38,13 +30,14 @@ app.get('/api/weather', async (req, res) => {
       return res.status(response.status).json(data);
     }
     
-    res.json(data);
+    // Set CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
+    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate');
+    
+    res.status(200).json(data);
   } catch (error) {
     console.error('Proxy error:', error);
     res.status(500).json({ error: 'Failed to fetch weather data' });
   }
-});
-
-app.listen(PORT, () => {
-  console.log(`Weather proxy running on port ${PORT}`);
-});
+}

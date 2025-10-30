@@ -215,7 +215,6 @@ class _ResourcesPageState extends State<ResourcesPage> {
             pinned: true,
             expandedHeight: 120,
             elevation: 0,
-            // CHANGED: Add gradient background to pinned state
             backgroundColor: Colors.transparent,
             automaticallyImplyLeading: false,
             flexibleSpace: Container(
@@ -302,7 +301,6 @@ class _ResourcesPageState extends State<ResourcesPage> {
   }
 }
 
-// Search Bar - CHANGED: grey colors instead of tinted
 class _SearchBar extends StatelessWidget {
   final TextEditingController controller;
   final String query;
@@ -368,7 +366,6 @@ class _SearchBar extends StatelessWidget {
   }
 }
 
-// Category Card - CHANGED: stable number display
 class _CategoryCard extends StatefulWidget {
   final _CategoryGroup group;
   final bool expanded;
@@ -396,7 +393,12 @@ class _CategoryCardState extends State<_CategoryCard>
   @override
   void initState() {
     super.initState();
-    _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 3000)); // CHANGED: much faster
+    @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 3000));
+    _c.repeat();
+  }
     _fade = CurvedAnimation(parent: _c, curve: Curves.easeOut);
     if (widget.expanded) _c.value = 1;
   }
@@ -417,18 +419,18 @@ class _CategoryCardState extends State<_CategoryCard>
       duration: const Duration(milliseconds: 120), // CHANGED: faster
       curve: Curves.easeOut,
       margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-      decoration: BoxDecoration(
+        decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        color: Colors.white, // CHANGED: pure white
+        color: Colors.white,
         border: Border.all(
-          color: accent.withOpacity(widget.expanded ? .35 : .20), // CHANGED: more subtle
+          color: accent.withOpacity(widget.expanded ? .35 : .20),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(.03), // CHANGED: much more subtle shadow
-            blurRadius: widget.expanded ? 8 : 4, // CHANGED: reduced blur
-            offset: const Offset(0, 2), // CHANGED: smaller offset
+            color: Colors.black.withOpacity(.03),
+            blurRadius: widget.expanded ? 8 : 4,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -513,7 +515,6 @@ class _CategoryCardState extends State<_CategoryCard>
   }
 }
 
-// Resource Tile
 class _ResourceTile extends StatefulWidget {
   final _ResourceEntry entry;
   final Color accent;
@@ -616,7 +617,6 @@ class _ResourceTileState extends State<_ResourceTile> {
   }
 }
 
-// Empty State
 class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {

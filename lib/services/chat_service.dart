@@ -17,9 +17,6 @@ class ChatGPTService {
       'Authorization': 'Bearer $apiKey',
     };
 
-    // Provide weather data to the model but keep it "internal":
-    // do NOT mention it unless the user asks about weather or it is directly
-    // relevant to the user's question.
     final systemPrompt = weatherContext != null && weatherContext.isNotEmpty
       ? """You are a concise assistant specializing in weather and heat safety.
           You have access to the following CURRENT WEATHER data (for internal use only):
@@ -39,12 +36,11 @@ class ChatGPTService {
       {"role": "user", "content": message}
     ];
 
-    // ...then use messages in your API call body:
     final body = jsonEncode({
       "model": "openai/gpt-oss-120b",
       "messages": messages,
       "temperature": 0.7,
-      "top_p": 0.9,      // Add this to encourage focused responses
+      "top_p": 0.9,
     });
 
     final response = await http.post(url, headers: headers, body: body);
@@ -64,10 +60,8 @@ class ChatGPTService {
       'Authorization': 'Bearer $apiKey',
     };
 
-    // Special system prompt for title generation
     const systemPrompt = "You are a helpful assistant. Summarize the following conversation in 3-5 words for a chat title. Only return the title, nothing else.";
 
-    // Build messages: system prompt + chat history
     final messages = [
       {"role": "system", "content": systemPrompt},
       ...chatHistory,
@@ -105,7 +99,6 @@ class ChatGPTService {
       'Authorization': 'Bearer $apiKey',
     };
 
-    // Build comprehensive weather context
     String weatherContext = """Current weather in $cityName:
     - Temperature: ${currentTemp.toStringAsFixed(0)}°F
     - Feels like: ${feelsLike.toStringAsFixed(0)}°F

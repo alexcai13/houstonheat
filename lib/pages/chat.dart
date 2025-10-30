@@ -56,7 +56,7 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
     _inputAnimationController.dispose();
     _controller.dispose();
     _scrollController.dispose();
-    _focusNode.dispose(); // Add this line
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -89,9 +89,7 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
       _controller.clear();
     });
 
-    // Keep focus on the text field after sending
-    _focusNode.requestFocus(); // Add this line
-
+    _focusNode.requestFocus();
     _scrollToBottom();
 
     try {
@@ -176,7 +174,7 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
     final messages = widget.chatHistories[widget.chatIndex]['messages'] as List;
 
     return Scaffold(
-      key: _scaffoldKey, // Add this line
+      key: _scaffoldKey,
       backgroundColor: Colors.grey[50],
       body: CustomScrollView(
         controller: _scrollController,
@@ -248,7 +246,7 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
                 child: Icon(Icons.menu, color: Colors.black, size: 20),
               ),
               onPressed: () {
-                _scaffoldKey.currentState?.openDrawer(); // Change this line
+                _scaffoldKey.currentState?.openDrawer();
               },
             ),
           ),
@@ -381,7 +379,7 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
                 Expanded(
                   child: TextField(
                     controller: _controller,
-                    focusNode: _focusNode, // Add this line
+                    focusNode: _focusNode,
                     decoration: InputDecoration(
                       hintText: 'Ask about heat safety...',
                       hintStyle: TextStyle(color: Colors.grey[500]),
@@ -427,7 +425,6 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
   }
 }
 
-// Animated Message Bubble Component
 class AnimatedMessageBubble extends StatefulWidget {
   final Map<String, dynamic> message;
   final int index;
@@ -566,7 +563,6 @@ class _AnimatedMessageBubbleState extends State<AnimatedMessageBubble>
   }
 }
 
-// Modern Drawer Component
 class ModernDrawer extends StatelessWidget {
   final List<Map<String, dynamic>> chatHistories;
   final int currentChatIndex;
@@ -615,7 +611,6 @@ class ModernDrawer extends StatelessWidget {
               ),
             ),
             
-            // Start New Chat
             Container(
               margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: Material(
@@ -657,7 +652,6 @@ class ModernDrawer extends StatelessWidget {
 
             Divider(indent: 16, endIndent: 16),
             
-            // Previous Chats Section Header
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
               child: Row(
@@ -676,7 +670,6 @@ class ModernDrawer extends StatelessWidget {
               ),
             ),
             
-            // Previous Chats List
             Expanded(
               child: ListView.builder(
                 padding: EdgeInsets.symmetric(horizontal: 16),

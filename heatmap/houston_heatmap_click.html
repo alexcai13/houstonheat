@@ -370,12 +370,12 @@
         };
         
         const colorScale = [
-            {heat: 0,  r: 0,   g: 150, b: 255},  // #0096ff — electric blue
-            {heat: 2,  r: 0,   g: 200, b: 255},  // #00c8ff — bright cyan
-            {heat: 4,  r: 0,   g: 230, b: 180},  // #00e6b4 — vibrant teal
-            {heat: 6,  r: 150, g: 255, b: 0},    // #96ff00 — electric lime
-            {heat: 8,  r: 255, g: 220, b: 0},    // #ffdc00 — bright yellow
-            {heat: 10, r: 255, g: 60,  b: 60}    // #ff3c3c — vibrant red
+            {heat: 0,  r: 0,   g: 150, b: 255},  
+            {heat: 2,  r: 0,   g: 200, b: 255},  
+            {heat: 4,  r: 0,   g: 230, b: 180},  
+            {heat: 6,  r: 150, g: 255, b: 0},   
+            {heat: 8,  r: 255, g: 220, b: 0},  
+            {heat: 10, r: 255, g: 60,  b: 60}    
         ];
         
         let currentWeather = null;
@@ -384,9 +384,8 @@
         let ctx = null;
         let currentMarker = null;
         
-        // Convert RGB color to heat value (0-10) with interpolation
         function rgbToHeat(r, g, b) {
-            // Find the two closest colors and interpolate
+
             let minDist1 = Infinity;
             let minDist2 = Infinity;
             let closest1 = colorScale[0];
@@ -410,12 +409,12 @@
                 }
             }
             
-            // If very close to one color, use it
+           
             if (minDist1 < 10) {
                 return closest1.heat;
             }
             
-            // Interpolate between two closest colors
+
             const totalDist = minDist1 + minDist2;
             if (totalDist === 0) return closest1.heat;
             
@@ -425,7 +424,6 @@
             return closest1.heat * weight1 + closest2.heat * weight2;
         }
         
-        // Get heat value by reading pixel color from image
         function getHeatValueFromImage(lat, lon) {
             if (!canvas || !ctx) {
                 console.error('❌ Canvas not ready - returning default value');
@@ -443,19 +441,19 @@
                 return 5;
             }
             
-            // Convert lat/lon to image pixel coordinates
+
             const latFrac = (lat - BOUNDS.south) / (BOUNDS.north - BOUNDS.south);
             const lonFrac = (lon - BOUNDS.west) / (BOUNDS.east - BOUNDS.west);
             
-            // Image coordinates (y=0 is top, y=max is bottom)
+
             const x = Math.floor(lonFrac * canvas.width);
             const y = Math.floor((1 - latFrac) * canvas.height);
             
-            // Bounds check
+
             const clampedX = Math.max(0, Math.min(canvas.width - 1, x));
             const clampedY = Math.max(0, Math.min(canvas.height - 1, y));
             
-            // Read pixel color
+
             try {
                 const imageData = ctx.getImageData(clampedX, clampedY, 1, 1);
                 const r = imageData.data[0];
