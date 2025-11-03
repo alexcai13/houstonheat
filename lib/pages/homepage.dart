@@ -393,7 +393,7 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
+                        color: Colors.black.withOpacity(0.1),
                         blurRadius: 20,
                         offset: Offset(0, 10),
                       ),
@@ -452,7 +452,7 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
                           borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
+                              color: Colors.black.withOpacity(0.1),
                               blurRadius: 20,
                               offset: Offset(0, 10),
                             ),
@@ -523,10 +523,10 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
                                     Container(
                                       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                       decoration: BoxDecoration(
-                                        color: tempToColor(feelsLikeF ?? 0).withValues(alpha: 0.6),
+                                        color: tempToColor(feelsLikeF ?? 0).withOpacity(0.6),
                                         borderRadius: BorderRadius.circular(16),
                                         border: Border.all(
-                                          color: tempToColor(feelsLikeF ?? 0).withValues(alpha: 1),
+                                          color: tempToColor(feelsLikeF ?? 0).withOpacity(1),
                                           width: 1,
                                         ),
                                       ),
@@ -610,7 +610,7 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
+                            color: Colors.black.withOpacity(0.05),
                             blurRadius: 10,
                             offset: Offset(0, 5),
                           ),
@@ -782,7 +782,7 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
                                                 child: Container(
                                                   padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                                   decoration: BoxDecoration(
-                                                    color: (showActualTemp ? Colors.blue[400] : Colors.red[400])!.withValues(alpha: 0.9),
+                                                    color: (showActualTemp ? Colors.blue[400] : Colors.red[400])!.withOpacity(0.9),
                                                     borderRadius: BorderRadius.circular(8),
                                                   ),
                                                   child: Text(
@@ -821,7 +821,7 @@ class _WeatherScreenState extends State<WeatherScreen> with TickerProviderStateM
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
+                            color: Colors.black.withOpacity(0.05),
                             blurRadius: 10,
                             offset: Offset(0, 5),
                           ),

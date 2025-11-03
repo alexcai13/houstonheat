@@ -236,7 +236,7 @@ class _ChatSelectorPageState extends State<ChatSelectorPage>
               borderRadius: BorderRadius.circular(32),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.blue.withValues(alpha: 0.4),
+                  color: Colors.blue.withOpacity(0.4),
                   blurRadius: 16,
                   offset: Offset(0, 8),
                 ),
@@ -336,7 +336,7 @@ class _AnimatedChatCardState extends State<AnimatedChatCard>
             margin: EdgeInsets.only(bottom: 16),
             child: Material(
               elevation: 4,
-              shadowColor: Colors.black.withValues(alpha: 0.1),
+              shadowColor: Colors.black.withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
               child: InkWell(
                 borderRadius: BorderRadius.circular(20),
@@ -367,7 +367,7 @@ class _AnimatedChatCardState extends State<AnimatedChatCard>
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.blue.withValues(alpha: 0.3),
+                                color: Colors.blue.withOpacity(0.3),
                                 blurRadius: 12,
                                 offset: Offset(0, 4),
                               ),

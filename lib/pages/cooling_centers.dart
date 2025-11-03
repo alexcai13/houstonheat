@@ -193,44 +193,36 @@ class _AnimatedCenterCardState extends State<AnimatedCenterCard>
     super.dispose();
   }
 
-  Future<void> _navigateToCenter() async {
+  Future<void> _navigateToCenter(Map<String, dynamic> center) async {
     try {
-      Position? currentLocation;
-      try {
-        currentLocation = await _getCurrentLocation();
-      } catch (e) {
-        print('Could not get current location: $e');
-      }
+      final currentLocation = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: 5,
+        ),
+      );
 
       final centerData = {
-        'name': widget.center.name,
-        'address': widget.center.address,
-        'lat': widget.center.lat,
-        'lon': widget.center.lon,
-        'window': widget.center.window,
+        'name': center['name'],
+        'address': center['address'],
+        'lat': center['lat'],
+        'lon': center['lon'],
+        'window': center['window'],
       };
 
-      if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => NavigationPage(
-              center: centerData,
-              userLocation: currentLocation,
-            ),
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => NavigationPage(
+            center: centerData,
+            userLocation: currentLocation,
           ),
-        );
-      }
+        ),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to start navigation: $e'),
-            backgroundColor: Colors.red[600],
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error getting location: $e')),
+      );
     }
   }
 
@@ -246,13 +238,19 @@ class _AnimatedCenterCardState extends State<AnimatedCenterCard>
             margin: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Material(
               elevation: 8,
-              shadowColor: Colors.black.withValues(alpha: 0.15),
+              shadowColor: Colors.black.withOpacity(0.15),
               borderRadius: BorderRadius.circular(20),
               child: InkWell(
-                onTap: _navigateToCenter,
+                onTap: () => _navigateToCenter({
+                  'name': widget.center.name,
+                  'address': widget.center.address,
+                  'lat': widget.center.lat,
+                  'lon': widget.center.lon,
+                  'window': widget.center.window,
+                }),
                 borderRadius: BorderRadius.circular(20),
-                splashColor: Colors.blue.withValues(alpha: 0.1),
-                highlightColor: Colors.blue.withValues(alpha: 0.05),
+                splashColor: Colors.blue.withOpacity(0.1),
+                highlightColor: Colors.blue.withOpacity(0.05),
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
@@ -280,7 +278,7 @@ class _AnimatedCenterCardState extends State<AnimatedCenterCard>
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.blue.withValues(alpha: 0.3),
+                                  color: Colors.blue.withOpacity(0.3),
                                   blurRadius: 12,
                                   offset: Offset(0, 4),
                                 ),
@@ -641,7 +639,7 @@ class _CoolingCentersPageState extends State<CoolingCentersPage>
         border: Border.all(color: Colors.grey[300]!, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 8,
             offset: Offset(0, 2),
           ),

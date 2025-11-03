@@ -16,6 +16,9 @@ migrate_working_dir/
 .env
 .env.local
 
+# iOS Info.plist with API keys
+ios/Runner/Info.plist
+
 # IntelliJ related
 *.iml
 *.ipr

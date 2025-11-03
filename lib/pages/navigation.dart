@@ -58,7 +58,10 @@ class _NavigationPageState extends State<NavigationPage> {
   void _setupPreview() {
     final destLat = widget.center['lat']?.toDouble();
     final destLon = widget.center['lon']?.toDouble();
-    if (destLat == null || destLon == null) return;
+    
+    if (destLat == null || destLon == null) {
+      return;
+    }
 
     final markers = <Marker>{
       Marker(
@@ -410,7 +413,7 @@ class _NavigationPageState extends State<NavigationPage> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
+                    color: Colors.black.withOpacity(0.1),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -429,12 +432,13 @@ class _NavigationPageState extends State<NavigationPage> {
                         zoomControlsEnabled: false,
                         myLocationEnabled: false,
                         myLocationButtonEnabled: false,
-                        onMapCreated: (controller) => _previewMapController = controller,
+                        onMapCreated: (controller) {
+                          _previewMapController = controller;
+                        },
                       ),
               ),
             ),
           ),
-          // Start button
           Container(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             child: SizedBox(
@@ -456,7 +460,7 @@ class _NavigationPageState extends State<NavigationPage> {
                   elevation: 4,
                 ),
                 child: Text(
-                  'Start ${_selectedMode == TransportationMode.driving ? 'Driving' : _selectedMode == TransportationMode.walking ? 'Walking' : 'Cycling'} Navigation', // CHANGED: Show selected mode
+                  'Start ${_selectedMode == TransportationMode.driving ? 'Driving' : _selectedMode == TransportationMode.walking ? 'Walking' : 'Cycling'} Navigation',
                   style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
@@ -504,7 +508,7 @@ class _NavigationPageState extends State<NavigationPage> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
+                      color: Colors.black.withOpacity(0.2),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),

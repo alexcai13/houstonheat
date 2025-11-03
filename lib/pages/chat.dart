@@ -237,7 +237,7 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
+                      color: Colors.black.withOpacity(0.1),
                       blurRadius: 8,
                       offset: Offset(0, 2),
                     ),
@@ -315,7 +315,7 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
+                            color: Colors.black.withOpacity(0.1),
                             blurRadius: 8,
                             offset: Offset(0, 2),
                           ),
@@ -368,7 +368,7 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
               border: Border.all(color: Colors.grey[200]!),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
+                  color: Colors.black.withOpacity(0.1),
                   blurRadius: 20,
                   offset: Offset(0, 4),
                 ),
@@ -515,7 +515,7 @@ class _AnimatedMessageBubbleState extends State<AnimatedMessageBubble>
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
+                          color: Colors.black.withOpacity(0.1),
                           blurRadius: 8,
                           offset: Offset(0, 2),
                         ),

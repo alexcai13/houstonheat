@@ -9,6 +9,7 @@ import 'pages/resource.dart';
 import 'dart:math' as Math;
 
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
   runApp(MyApp());
 }
