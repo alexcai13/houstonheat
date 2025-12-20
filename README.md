@@ -7,27 +7,22 @@ Houston Heat is a civic-minded mobile app designed to help Houston residents nav
 ### Heat Map
 - Full-resolution heat map overlay showing temperature variations across Houston
 - Click anywhere to see localized "feels like" temperature and heat score (0-10)
-- Real-time weather data integration via Google Weather API
 
 ### Weather Homepage
-- Current temperature and "feels like" readings
-- Hourly and 7-day forecast
+- Current temperature and "feels like" readings, Hourly and 7-day forecast
 - AI-generated weather summary
 
 ### Cooling Centers
 - Real-time list of open cooling centers in Houston
 - Automatically filtered by current time and day of week, sorted by distance 
-- Search functionality to find centers by name or address
 
 ### AI Chatbot
 - Ask questions about weather, heat safety, and local resources
 - Context-aware responses using current weather data
-- Helpful tips for staying cool during heat waves
 
 ### Resources
 - Heat safety tips and information
 - Links to external resources
-- Emergency contact information
 
 ## Setup
 
@@ -61,9 +56,4 @@ flutter pub get
 ```bash
 flutter run
 ```
-
-## Contact
-
-Created by [Alex Cai](https://github.com/alexcai13), [Adi Kejriwal](https://github.com/A-person1243), and [Samit Rath](https://github.com/g4ek) for the Congressional App Challenge 2025.
-
 ---
